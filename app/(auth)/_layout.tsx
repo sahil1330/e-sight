@@ -1,0 +1,30 @@
+import { useAuth } from "@/context/AuthContext";
+import { Redirect, Stack } from "expo-router";
+import React from "react";
+
+const AuthLayout = () => {
+  const { authState, isReady } = useAuth();
+  if (authState?.authenticated) {
+    return <Redirect href={"/(protected)"} />;
+  }
+  console.log("Is Ready ", isReady);
+  console.log("Is Logged In ", authState?.authenticated);
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen
+        name="sign-in"
+        options={{
+          headerShown: false,
+          headerTitle: "Sign in",
+          headerBackTitle: "Go Back",
+        }}
+      />
+    </Stack>
+  );
+};
+
+export default AuthLayout;
