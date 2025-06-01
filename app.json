@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "splash": "./assets/images/icon.png",
     "scheme": "esight",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
