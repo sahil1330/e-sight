@@ -8,14 +8,14 @@ let token;
     // }
 })();
 const axiosInstance = axios.create({
-    baseURL: process.env.EXPO_PUBLIC_REST_API_URL, // Replace with your API base URL
+    baseURL: "https://9fk5b449-8000.inc1.devtunnels.ms/api/v1", // Replace with your API base URL
     timeout: 10000, // Request timeout in milliseconds
     headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
     },
     proxy: {
-        host: process.env.EXPO_PUBLIC_REST_API_HOSTNAME as string,
+        host: "9fk5b449-8000.inc1.devtunnels.ms",
         port: 443,
     },
 });

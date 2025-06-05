@@ -93,13 +93,28 @@ export const AuthProvider = ({ children }: any) => {
     role: string
   ) => {
     try {
-      return await axiosInstance.post("/users/register", {
+      const response = await axiosInstance.post("/users/register", {
         fullName,
         email,
         password,
         phone,
         role,
       });
+      console.log(
+        "file: AuthContext.tsx, line 93: register: response ",
+        response.data
+      );
+      if (!response) {
+        return { isError: true, message: "No response from server" };
+      }
+      if (response.data.statusCode !== 201) {
+        return {
+          isError: true,
+          message: response.data.message || "Registration failed",
+        };
+      }
+
+      return response.data.success;
     } catch (error) {
       return { isError: true, message: (error as any)?.message };
     }
@@ -107,11 +122,21 @@ export const AuthProvider = ({ children }: any) => {
 
   const login = async (identifier: string, password: string) => {
     try {
+      console.log(
+        "file: AuthContext.tsx, line 110: login: identifier ",
+        identifier
+      );
       const result = await axiosInstance.post("/users/login", {
         identifier,
         password,
       });
-      console.log("file: AuthContext.tsx, line 112: login: result ", result);
+      console.log(
+        "file: AuthContext.tsx, line 112: login: result ",
+        result.data
+      );
+      if (!result) {
+        return { isError: true, message: "No response from server" };
+      }
       const newState = {
         token: result.data.data.accessToken,
         authenticated: true,
@@ -124,7 +149,7 @@ export const AuthProvider = ({ children }: any) => {
       ] = `Bearer ${newState.token}`;
       return newState;
     } catch (error) {
-      return { error: true, message: error };
+      return { isError: true, message: error };
     }
   };
 
@@ -139,7 +164,7 @@ export const AuthProvider = ({ children }: any) => {
         authenticated: false,
         userDetails: undefined,
       });
-      return result;
+      return result.data.statusCode;
     } catch (error) {
       return { isError: true, message: error };
     }
@@ -147,12 +172,41 @@ export const AuthProvider = ({ children }: any) => {
 
   const verifyEmail = async (email: string, code: string) => {
     try {
-      return await axiosInstance.post("/users/verify", {
+      const result = await axiosInstance.post("/users/verify", {
         email,
         code,
       });
+
+      console.log(
+        "file: AuthContext.tsx, line 174: verifyEmail: result ",
+        result.data
+      );
+
+      if (!result) {
+        return { isError: true, message: "No response from server" };
+      }
+
+      if (result.data.statusCode !== 200) {
+        return {
+          isError: true,
+          message: result.data.message || "Verification failed",
+        };
+      }
+
+      const newState = {
+        token: result.data.data.accessToken,
+        authenticated: true,
+        userDetails: result.data.data.user,
+      };
+
+      setAuthState(newState);
+      await storeAuthStateInStorage(newState);
+      axiosInstance.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${newState.token}`;
+      return newState;
     } catch (error) {
-      return { message: error };
+      return { isError: true, message: error };
     }
   };
 

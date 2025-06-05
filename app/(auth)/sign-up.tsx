@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { signUpSchema } from "@/schema/signUpSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -41,8 +42,35 @@ const SignUp = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { register } = useAuth();
+  const onSubmit = async (data: SignUpFormData) => {
+    try {
+      if (!register) {
+        Alert.alert("Error", "Some error occurred.");
+        return;
+      }
+      const result = await register(
+        data.fullName,
+        data.email,
+        data.password,
+        data.phone,
+        data.role
+      );
 
-  const onSubmit = (data: SignUpFormData) => {
+      if (result?.isError) {
+        Alert.alert("Error", result.message || "An error occurred.");
+        return;
+      }
+
+      if (result) {
+        router.push("/(auth)/verify-email");
+      }
+    } catch (error) {
+      console.error("Error during sign-up:", error);
+      Alert.alert("Sign Up Error", "An error occurred during sign-up.");
+      return;
+    }
     Alert.alert(
       "Sign Up",
       "Sign up successful!" + JSON.stringify(data, null, 2)

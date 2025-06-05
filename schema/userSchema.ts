@@ -5,5 +5,5 @@ export default interface User {
     phone: string | undefined;
     role: string | undefined;
     isVerified: boolean | undefined;
-    connectedUsers: [string] | undefined;
+    connectedUsers: [User] | undefined;
 }

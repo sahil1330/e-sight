@@ -45,6 +45,7 @@ const AuthLayout = () => {
           headerBackTitle: "Go Back",
         }}
       />
+      
       <Stack.Screen
         name="verify-email"
         options={{
