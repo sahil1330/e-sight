@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -37,16 +38,27 @@ const SignIn = () => {
   const { width } = useWindowDimensions();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const onSubmit = async (data: SignInFormData) => {
-    if (login) {
-      await login(data?.identifier, data?.password);
+    setIsSubmitting(true);
+    try {
+      if (login) {
+        const result = await login(data?.identifier, data?.password);
+        if (result.isError) {
+          Alert.alert("Error", result.message);
+        }
+        if (result.success) {
+          Alert.alert("Success", "You have successfully signed in!");
+          router.replace("/(protected)/(tabs)");
+        }
+      }
+    } catch (error) {
+      console.error("Sign-in error:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-    Alert.alert(
-      "Sign In",
-      "Sign in successful!" + JSON.stringify(data, null, 2)
-    );
-    // Handle sign-in logic here
   };
 
   // Additional styles for responsive design
@@ -183,8 +195,9 @@ const SignIn = () => {
               onPress={handleSubmit(onSubmit)}
               className="bg-blue-500 py-4 rounded-xl items-center mt-6 shadow-sm shadow-blue-400"
               activeOpacity={0.8}
+              disabled={isSubmitting}
             >
-              <Text className="text-white font-bold text-xl">Sign In</Text>
+              {isSubmitting ? (<Text className="text-white font-bold text-xl">Signing in <ActivityIndicator size={16} /></Text>) : (<Text className="text-white font-bold text-xl">Sign In</Text>)} 
             </TouchableOpacity>
 
             {/* Don't have an account */}

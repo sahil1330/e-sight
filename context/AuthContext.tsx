@@ -1,5 +1,7 @@
 import User from "@/schema/userSchema";
 import axiosInstance from "@/utils/axiosInstance";
+import { getErrorMessage } from "@/utils/getErrorMessage";
+import { isAxiosError } from "axios";
 import { SplashScreen } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -130,10 +132,6 @@ export const AuthProvider = ({ children }: any) => {
         identifier,
         password,
       });
-      console.log(
-        "file: AuthContext.tsx, line 112: login: result ",
-        result.data
-      );
       if (!result) {
         return { isError: true, message: "No response from server" };
       }
@@ -147,9 +145,16 @@ export const AuthProvider = ({ children }: any) => {
       axiosInstance.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${newState.token}`;
-      return newState;
+      return { success: true };
     } catch (error) {
-      return { isError: true, message: error };
+      if (isAxiosError(error)) {
+        const errorMessage = getErrorMessage((error as any).response?.data);
+        return { isError: true, message: errorMessage };
+      }
+      return {
+        isError: true,
+        message: (error as any)?.message || "Login failed",
+      };
     }
   };
 

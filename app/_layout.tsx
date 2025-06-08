@@ -1,4 +1,4 @@
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -24,13 +24,32 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <Stack>
+        {/* <Stack>
           <Stack.Screen name="(protected)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
-        </Stack>
+        </Stack> */}
+        <AuthCheckProvider />
         <StatusBar style="auto" />
       </AuthProvider>
     </ThemeProvider>
   );
 }
+
+export const AuthCheckProvider = () => {
+  const { authState, isReady } = useAuth();
+  if (!isReady) {
+    return null; // or a loading spinner
+  }
+  return (
+    <Stack>
+      <Stack.Protected guard={authState?.authenticated as boolean}>
+        <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={!authState?.authenticated as boolean}>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Screen name="+not-found" />
+    </Stack>
+  );
+};
