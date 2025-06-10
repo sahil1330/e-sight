@@ -9,7 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to send your current location to the server in the background.",
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to send your current location to the server.",
+        "UIBackgroundModes": ["location", "background-fetch"]
+      }
     },
     "android": {
       "config": {
@@ -54,7 +59,26 @@
         }
       ],
       "expo-secure-store",
-      "react-native-ble-plx"
+      "react-native-ble-plx",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to access your location",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background",
+          "locationWhenInUsePermission": "Allow ${PRODUCT_NAME} to access your location while you are using the app",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#000000",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

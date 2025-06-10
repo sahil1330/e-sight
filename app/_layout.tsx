@@ -10,6 +10,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import "./global.css";
+import { SocketProvider } from "@/context/SocketProvider";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -24,13 +25,15 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        {/* <Stack>
+        <SocketProvider>
+          {/* <Stack>
           <Stack.Screen name="(protected)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack> */}
-        <AuthCheckProvider />
-        <StatusBar style="auto" />
+          <AuthCheckProvider />
+          <StatusBar style="auto" />
+        </SocketProvider>
       </AuthProvider>
     </ThemeProvider>
   );

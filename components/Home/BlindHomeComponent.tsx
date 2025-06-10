@@ -1,22 +1,147 @@
 import User from "@/schema/userSchema";
+import LocationService from "@/utils/LocationService";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
+  AppState,
+  AppStateStatus,
   RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
 } from "react-native";
 import ConnectToDevice from "./ConnectToDevice";
 
 const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const { width } = useWindowDimensions();
+  const [isTracking, setIsTracking] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+  const locationService = useRef(new LocationService()).current;
+  const appState = useRef(AppState.currentState);
 
-  const onRefresh = React.useCallback(() => {
+  useEffect(() => {
+    checkServiceStatus();
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    const interval = setInterval(checkConnectionStatus, 5000);
+    startTracking();
+    return () => {
+      subscription.remove();
+      clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Error", error);
+      setError(null);
+    }
+    return () => {
+      // Cleanup function to reset error state if needed
+      setError(null);
+    };
+  }, [error]);
+
+  const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    if (
+      appState.current.match(/inactive|background/) &&
+      nextAppState === "active"
+    ) {
+      // App has come to the foreground
+      checkServiceStatus();
+      checkConnectionStatus();
+    }
+    appState.current = nextAppState;
+  };
+
+  const checkServiceStatus = async () => {
+    const isActive = await locationService.isServiceActive();
+    setIsTracking(isActive);
+  };
+
+  const checkConnectionStatus = async () => {
+    const isConnected = await locationService.getConnectionStatus();
+    setIsConnected(isConnected);
+  };
+
+  const startTracking = async () => {
+    try {
+      const success = await locationService.startBackgroundService();
+      if (success) {
+        setIsTracking(true);
+        setLastUpdate(new Date().toLocaleDateString());
+        setError(null);
+        Alert.alert(
+          "Location Tracking Started",
+          "Your location can be seen by the caretaker."
+        );
+      } else {
+        setError("Failed to start tracking. Please try again.");
+        Alert.alert(
+          "Error",
+          "Failed to start location tracking. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Error starting tracking:", error);
+      setError("Failed to start tracking. Please try again.");
+    }
+  };
+
+  const stopTracking = async () => {
+    try {
+      const success = await locationService.stopBackgroundService();
+      if (success) {
+        setIsTracking(false);
+        setLastUpdate(null);
+        setIsConnected(false);
+        Alert.alert(
+          "Location Tracking Stopped",
+          "Your location is no longer being shared."
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          "Failed to stop location tracking. Please try again."
+        );
+      }
+    } catch (error) {
+      console.error("Error stopping tracking:", error);
+      setError("Failed to stop tracking. Please try again.");
+    }
+  };
+
+  const handleToggleTracking = () => {
+    if (isTracking) {
+      Alert.alert(
+        "Stop Tracking",
+        "Are you sure you want to stop location tracking?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Stop",
+            onPress: stopTracking,
+            style: "destructive",
+          },
+        ]
+      );
+    } else {
+      startTracking();
+    }
+  };
+
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     // Add your refresh logic here
     setTimeout(() => setRefreshing(false), 2000);

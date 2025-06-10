@@ -144,7 +144,7 @@ const SignIn = () => {
                   }}
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border rounded-xl px-4 py-3.5 ${
+                      className={`border rounded-xl px-4 py-3.5  text-black ${
                         errors.password
                           ? "border-red-500 bg-red-50"
                           : focusedField === "password"

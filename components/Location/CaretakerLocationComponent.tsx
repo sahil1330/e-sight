@@ -75,18 +75,19 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
       });
     }
   }, [locations]);
+  console.log("MapLoaded:", mapLoaded);
+  console.log("Locations:", locations);
   return (
-    <View style={styles.container}>
+    <View className="container h-full bg-white">
       {error && <Text style={styles.errorText}>{error}</Text>}
-      
-      <View style={styles.mapContainer}>
+
+      <View className="w-full h-full relative">
         <MapView
-          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
           style={styles.map}
-          initialRegion={region}
           onMapReady={() => setMapLoaded(true)}
-          showsUserLocation
-          showsMyLocationButton
+          initialRegion={region}
+          region={mapLoaded ? region : undefined}
         >
           {locations?.map((location) => (
             <Marker
@@ -96,6 +97,7 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
                 longitude: location.longitude,
               }}
               title={location.fullName}
+              pinColor="#007AFF" // Custom pin color
               description={location.email}
             />
           ))}
@@ -116,24 +118,25 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   mapContainer: {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
+    width: "100%",
+    height: "100%",
+    position: "relative",
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   errorText: {
-    color: 'red',
+    color: "red",
     padding: 10,
-    textAlign: 'center',
+    textAlign: "center",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  }
+    backgroundColor: "rgba(255,255,255,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default CaretakerLocationComponent;

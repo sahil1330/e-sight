@@ -61,7 +61,6 @@ export const AuthProvider = ({ children }: any) => {
   useEffect(() => {
     setIsReady(false);
     const getAuthFromStorage = async () => {
-      await new Promise((res) => setTimeout(() => res(null), 1000));
       try {
         const value = await SecureStore.getItemAsync("authState");
         if (value) {
@@ -147,7 +146,9 @@ export const AuthProvider = ({ children }: any) => {
       ] = `Bearer ${newState.token}`;
       return { success: true };
     } catch (error) {
+      console.error("Login error:", error);
       if (isAxiosError(error)) {
+        console.error("Axios error:", error);
         const errorMessage = getErrorMessage((error as any).response?.data);
         return { isError: true, message: errorMessage };
       }
