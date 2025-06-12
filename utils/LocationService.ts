@@ -7,7 +7,7 @@ import { io, Socket } from "socket.io-client";
 const LOCATION_TASK_NAME = "background-location-task";
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldPlaySound: true,
+        shouldPlaySound: false,
         shouldSetBadge: false,
         shouldShowBanner: true,
         shouldShowList: true,
@@ -90,7 +90,6 @@ class LocationService {
                     body: "Initializing location tracking...",
                     sticky: true,
                     priority: Notifications.AndroidNotificationPriority.HIGH,
-                    sound: "default",
                     vibrate: [500, 1000, 500],
                 },
                 trigger: null, // Trigger immediately
@@ -112,7 +111,6 @@ class LocationService {
                     body: message,
                     sticky: true,
                     priority: Notifications.AndroidNotificationPriority.HIGH,
-                    sound: "default",
                     vibrate: [500, 1000, 500],
                 },
                 trigger: null, // Trigger immediately
@@ -137,26 +135,30 @@ class LocationService {
             // Store a heartbeat timestamp to help monitor the service
             await SecureStore.setItemAsync("locationLastHeartbeat", Date.now().toString());
             
-            // Start background location task with improved settings
+            // Start background location task with settings optimized for 24/7 operation
             await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-                accuracy: Location.Accuracy.BestForNavigation,
-                timeInterval: 10000, // 10 seconds
-                distanceInterval: 10, // 10 meters
-                deferredUpdatesInterval: 10000, // 10 seconds
+                accuracy: Location.Accuracy.Balanced, // Use balanced instead of best for battery
+                timeInterval: 30000, // 30 seconds - less frequent to preserve battery
+                distanceInterval: 50, // 50 meters
+                deferredUpdatesInterval: 30000,
                 foregroundService: {
-                    notificationTitle: "Location Tracking",
-                    notificationBody: "Tracking your location in the background",
+                    notificationTitle: "E-Sight Location Tracking",
+                    notificationBody: "Continuously tracking location for safety",
                     notificationColor: "#00FF00",
+                    killServiceOnDestroy: false, // Prevent service from being killed
                 },
-                showsBackgroundLocationIndicator: true,
-                // Add these properties to prevent system from killing the task
                 pausesUpdatesAutomatically: false,
+                showsBackgroundLocationIndicator: false, // Hide indicator to prevent user from stopping
+                // Additional properties for continuous operation
+                activityType: Location.LocationActivityType.Other,
+                mayShowUserSettingsDialog: false,
             });
 
             this.isServiceRunning = true;
             await SecureStore.setItemAsync("locationServiceRunning", "true");
+            await SecureStore.setItemAsync("serviceStartTime", Date.now().toString());
 
-            console.log("Background location service started successfully");
+            console.log("24/7 Background location service started successfully");
             return true;
         } catch (error) {
             console.error("Error starting background service:", error);
@@ -170,18 +172,31 @@ class LocationService {
             await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
 
             if (this.socket) {
+                this.socket.removeAllListeners();
                 this.socket.disconnect();
                 this.socket = undefined;
             }
-
-            // Cancel Notification
-            if (this.notificationId) {
-                await Notifications.cancelScheduledNotificationAsync(this.notificationId);
-                this.notificationId = null;
+            
+            // Clean up global socket
+            if (globalSocket) {
+                globalSocket.removeAllListeners();
+                globalSocket.disconnect();
+                globalSocket = null;
             }
 
+            // Cancel all notifications
+            await Notifications.cancelAllScheduledNotificationsAsync();
+            
+            this.notificationId = null;
             this.isServiceRunning = false;
+            
+            // Clean up stored data
             await SecureStore.setItemAsync("locationServiceRunning", "false");
+            await SecureStore.deleteItemAsync("locationLastHeartbeat");
+            await SecureStore.deleteItemAsync("serviceStartTime");
+            await SecureStore.deleteItemAsync("lastLocationData");
+            await SecureStore.deleteItemAsync("pendingLocationData");
+            
             console.log("Background location service stopped successfully");
             return true;
         } catch (error) {
@@ -202,35 +217,101 @@ class LocationService {
     }
 }
 
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
-    if (error) {
-        console.error("Location task error:", error);
-        return;
+// Create a global socket instance to persist between location updates
+let globalSocket: Socket | null = null;
+
+// Helper function to ensure socket connection
+const ensureSocketConnection = async (): Promise<Socket | null> => {
+    if (!globalSocket || !globalSocket.connected) {
+        console.log("Creating/reconnecting global socket for background updates");
+        
+        if (globalSocket) {
+            globalSocket.removeAllListeners();
+            globalSocket.disconnect();
+        }
+        
+        globalSocket = io(process.env.EXPO_PUBLIC_REST_API_BASE_URL!, {
+            transports: ["websocket"],
+            autoConnect: true,
+            reconnectionAttempts: Infinity, // Keep trying forever
+            reconnectionDelay: 2000,
+            reconnectionDelayMax: 10000,
+            timeout: 20000,
+            forceNew: true, // Force new connection
+        });
+        
+        globalSocket.on("connect", () => {
+            console.log("Global socket connected:", globalSocket?.id);
+        });
+        
+        globalSocket.on("disconnect", (reason) => {
+            console.log("Global socket disconnected:", reason);
+            // Auto-reconnect on disconnect
+            setTimeout(() => {
+                if (globalSocket && !globalSocket.connected) {
+                    globalSocket.connect();
+                }
+            }, 2000);
+        });
+        
+        globalSocket.on("connect_error", (error) => {
+            console.log("Global socket connection error:", error);
+        });
+        
+        globalSocket.on("reconnect", (attemptNumber) => {
+            console.log("Global socket reconnected after", attemptNumber, "attempts");
+        });
+        
+        // Wait for connection with longer timeout
+        return new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+                console.log("Socket connection timeout - but continuing anyway");
+                resolve(globalSocket); // Return socket even if not connected yet
+            }, 10000);
+            
+            if (globalSocket?.connected) {
+                clearTimeout(timeout);
+                resolve(globalSocket);
+            } else {
+                globalSocket?.once("connect", () => {
+                    clearTimeout(timeout);
+                    resolve(globalSocket);
+                });
+            }
+        });
     }
     
-    // Check if data is available
-    if (data) {
-        const { locations } = data;
+    return globalSocket;
+};
+
+TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
+    try {
+        if (error) {
+            console.error("Location task error:", error);
+            return { success: false, error };
+        }
         
-        // Only log the latest location to avoid excessive logging
-        if (locations && locations.length > 0) {
-            console.log("Latest location:", locations[0]);
+        // Update heartbeat timestamp
+        const heartbeat = Date.now().toString();
+        await SecureStore.setItemAsync("locationLastHeartbeat", heartbeat);
+        
+        // Check if data is available
+        if (data) {
+            const { locations } = data;
             
-            // Send only the most recent location to server
-            try {
-                const locationService = new LocationService();
-                await locationService.initializeSocket();
+            // Only proceed if we have location data
+            if (locations && locations.length > 0) {
+                console.log("Processing location update at:", new Date().toLocaleTimeString());
                 
-                // Add a small delay to ensure socket has time to connect
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Ensure socket connection (non-blocking)
+                const socket = await ensureSocketConnection();
                 
                 const userState = await SecureStore.getItemAsync("authState");
                 const parsedUserState = userState ? JSON.parse(userState) : null;
                 
                 if (!parsedUserState || !parsedUserState.userDetails || !parsedUserState.userDetails._id) {
                     console.error("User ID not found in authState");
-                    locationService.updateNotification("User not authenticated");
-                    return;
+                    return { success: false, error: "No user auth" };
                 }
                 
                 const userId = parsedUserState.userDetails._id;
@@ -248,31 +329,39 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                     }
                 };
                 
-                // Check if socket is connected before trying to emit
-                if (locationService.socket && locationService.socket.connected) {
-                    console.log("Sending location to server:", locationData);
-                    locationService.socket.emit("locationUpdate", locationData);
-                    locationService.updateNotification(`Location sent at ${new Date(location.timestamp).toLocaleTimeString()}`);
+                // Try to emit the location data
+                if (socket) {
+                    console.log("Emitting location update:", new Date().toLocaleTimeString());
+                    socket.emit("locationUpdate", locationData);
+                    
+                    // Store the last location for recovery
+                    await SecureStore.setItemAsync("lastLocationData", JSON.stringify(locationData));
                 } else {
-                    console.log("Socket not connected. Attempting to connect...");
-                    locationService.updateNotification("Connecting to server...");
-                    
-                    // Set up a connection listener to send data once connected
-                    locationService.socket?.once("connect", () => {
-                        console.log("Socket connected. Now sending location.");
-                        locationService.socket?.emit("locationUpdate", locationData);
-                        locationService.updateNotification(`Location sent at ${new Date(location.timestamp).toLocaleTimeString()}`);
-                    });
-                    
-                    // Try to connect
-                    if (locationService.socket) {
-                        locationService.socket.connect();
-                    }
+                    console.log("No socket available, storing location for later");
+                    await SecureStore.setItemAsync("pendingLocationData", JSON.stringify(locationData));
                 }
-            } catch (error) {
-                console.error("Error in location update task:", error);
+                
+                // Update notification (non-blocking)
+                Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: "Location tracking active",
+                        body: `Location sent at ${new Date().toLocaleTimeString()}`,
+                        sticky: true,
+                        priority: Notifications.AndroidNotificationPriority.HIGH,
+                    },
+                    trigger: null,
+                }).catch((notifError) => {
+                    console.log("Notification error:", notifError);
+                });
+                
+                return { success: true };
             }
         }
+        
+        return { success: true, message: "No location data" };
+    } catch (error: any) {
+        console.error("Critical error in background location task:", error);
+        return { success: false, error: error.message };
     }
 })
 
