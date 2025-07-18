@@ -1,5 +1,5 @@
 import * as ExpoDevice from "expo-device";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PermissionsAndroid, Platform } from "react-native";
 import { BleError, BleManager, Characteristic, Device } from "react-native-ble-plx";
 
@@ -7,7 +7,7 @@ interface BLEAPI {
     requestPermissions(): Promise<boolean>;
     scanForPeripherals(): void;
     connectToDevice(device: Device): Promise<void>;
-    disconnectFromDevice(deviceId: string): Promise<void>;
+    disconnectFromDevice(): Promise<void>; // Remove deviceId parameter
     connectedDevice: Device | null;
     allDevices: Device[];
     messages: string[];
@@ -15,7 +15,7 @@ interface BLEAPI {
     characteristic: Characteristic | null;
     startStreamingData(device: Device): Promise<void>;
     onMessageUpdate(error: BleError | null, characteristic: Characteristic | null): Promise<number>;
-
+    stopScan(): void; // Add stop scan method
 }
 
 function useBLE(): BLEAPI {
@@ -25,6 +25,18 @@ function useBLE(): BLEAPI {
     const [messages, setMessages] = useState<string[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [characteristic, setCharacteristic] = useState<Characteristic | null>(null);
+
+    // Clean up on unmount
+    useEffect(() => {
+        return () => {
+            if (isScanning) {
+                bleManager.stopDeviceScan();
+            }
+            if (connectedDevice) {
+                bleManager.cancelDeviceConnection(connectedDevice.id);
+            }
+        };
+    }, [bleManager, isScanning, connectedDevice]);
 
     const requestAndroid31Permissions = async () => {
         const bluetoothPermission = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
@@ -84,27 +96,49 @@ function useBLE(): BLEAPI {
         return devices.findIndex(device => nextDevice.id === device.id) >= 0;
     };
 
+    const stopScan = () => {
+        bleManager.stopDeviceScan();
+        setIsScanning(false);
+    };
+
     const scanForPeripherals = async () => {
         const permissionsGranted = await requestPermissions();
         if (!permissionsGranted) {
             console.log("Bluetooth permissions not granted");
             return;
         }
-        await bleManager.startDeviceScan(
+
+        // Clear previous devices when starting new scan
+        setAllDevices([]);
+        setIsScanning(true);
+
+        bleManager.startDeviceScan(
             null,
             null,
             (error, device) => {
-                setIsScanning(true);
                 if (error) {
                     console.error("Error during device scan:", error);
                     setIsScanning(false);
                     return;
                 }
-                if (device && !isDuplicateDevice(allDevices, device)) {
-                    setAllDevices(prevDevices => [...prevDevices, device]);
-                    console.log("Discovered device:", device.name || "Unnamed Device");
+                if (device && device.name) { // Only add devices with names
+                    setAllDevices(prevDevices => {
+                        if (!isDuplicateDevice(prevDevices, device)) {
+                            console.log("Discovered device:", device.name);
+                            return [...prevDevices, device];
+                        }
+                        return prevDevices;
+                    });
                 }
-            })
+            }
+        );
+
+        // Auto-stop scan after 30 seconds
+        setTimeout(() => {
+            if (isScanning) {
+                stopScan();
+            }
+        }, 30000);
     };
 
     const connectToDevice = async (device: Device) => {
@@ -113,44 +147,70 @@ function useBLE(): BLEAPI {
                 console.log("Already connected to this device:", device.name || "Unnamed Device");
                 return;
             }
+
+            // Disconnect from previous device if exists
             if (connectedDevice && connectedDevice.id !== device.id) {
                 await bleManager.cancelDeviceConnection(connectedDevice.id);
                 setConnectedDevice(null);
+                setCharacteristic(null);
             }
 
-            const deviceConnection = await bleManager.connectToDevice(device.id);
-            setConnectedDevice(deviceConnection);
-            await deviceConnection.discoverAllServicesAndCharacteristics();
+            // Stop scanning before connecting
+            if (isScanning) {
+                await bleManager.stopDeviceScan();
+                setIsScanning(false);
+            }
 
-            await device.requestMTU(512);
+            const deviceConnection = await bleManager.connectToDevice(device.id)
+            if (!deviceConnection) {
+                throw new Error("Failed to connect to device");
+            }
+
+            setConnectedDevice(deviceConnection);
+
+            await deviceConnection.discoverAllServicesAndCharacteristics();
+            try {
+                await deviceConnection.requestMTU(512);
+            } catch (mtuError) {
+                console.warn("MTU request failed, continuing with default:", mtuError);
+            }
 
             const services = await deviceConnection.services();
             console.log("Connected to device:", device.name || "Unnamed Device");
-            console.log("Services:", services);
-            const characteristics = await deviceConnection.characteristicsForService(services[0].uuid);
-            const characteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
-            if (characteristic) {
-                setCharacteristic(characteristic);
-                console.log("Characteristic found:", characteristic.uuid);
-            }
+            console.log("Services found:", services.length);
 
-            await bleManager.stopDeviceScan();
-            setIsScanning(false);
+            if (services.length > 0) {
+                const characteristics = await deviceConnection.characteristicsForService(services[0].uuid);
+                // const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
+                console.log("Characteristics found:", characteristics.length);
+                console.log("Characteristics found:", characteristics.map(c => c.uuid));
+                console.log("Characteristics Services found:", characteristics.map(c => c.serviceUUID));
+                const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
+                console.log("Write characteristic found:", JSON.stringify(writeCharacteristic?.uuid));
+                setCharacteristic(writeCharacteristic || null);
+                startStreamingData(deviceConnection);
+            }
         } catch (error) {
             console.error("Error connecting to device:", error);
+            setConnectedDevice(null);
+            setCharacteristic(null);
+            await bleManager.cancelDeviceConnection(device.id);
         }
-    }
+    };
 
     const disconnectFromDevice = async () => {
         if (connectedDevice) {
-            bleManager.cancelDeviceConnection(connectedDevice.id)
-                .then(() => {
-                    console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
-                    setConnectedDevice(null);
-                    setCharacteristic(null);
-                })
+            try {
+                // const result = await bleManager.cancelDeviceConnection(connectedDevice.id);
+                bleManager.cancelDeviceConnection(connectedDevice.id);
+                console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
+                setConnectedDevice(null);
+                setCharacteristic(null);
+            } catch (error) {
+                console.error("Error disconnecting from device:", error);
+            }
         }
-    }
+    };
 
     const onMessageUpdate = async (error: BleError | null, characteristic: Characteristic | null) => {
         if (error) {
@@ -158,42 +218,38 @@ function useBLE(): BLEAPI {
             return -1;
         }
         else if (!characteristic?.value) {
-            console.error("No value found for characteristic:", characteristic);
+            console.error("No value found for characteristic");
             return -1;
         }
 
-        console.log("Characteristic value updated:", characteristic.value);
-        const value = Buffer.from(characteristic.value, 'base64').toString('utf-8');
-        setMessages(prevMessages => [...prevMessages, value]);
-        console.log("Received data:", value);
-        return 0;
-    }
+        try {
+            const value = Buffer.from(characteristic.value, 'base64').toString('utf-8');
+            console.log("Received data:", value);
+            setMessages(prevMessages => [...prevMessages, value]);
+            return 0;
+        } catch (decodeError) {
+            console.error("Error decoding characteristic value:", decodeError);
+            return -1;
+        }
+    };
 
     const startStreamingData = async (device: Device) => {
         try {
+            console.log("Starting data stream for device:", device.name || "Unnamed Device");
+            console.log("Starting data stream for characteristic:", characteristic?.uuid);
             if (!characteristic) {
-                console.error("No characteristic available for data streaming.");
                 return;
             }
-            await device.monitorCharacteristicForService(
+            // Start monitoring the characteristic
+            device.monitorCharacteristicForService(
                 characteristic.serviceUUID,
                 characteristic.uuid,
-                (error, char) => {
-                    if (error) {
-                        console.error("Error monitoring characteristic:", error);
-                        return;
-                    }
-                    if (char && char.value) {
-                        const value = Buffer.from(char.value, 'base64').toString('utf-8');
-                        setMessages(prevMessages => [...prevMessages, value]);
-                        console.log("Received data:", value);
-                    }
-                }
+                onMessageUpdate
             );
         } catch (error) {
             console.error("Error starting data stream:", error);
         }
-    }
+    };
 
     return {
         startStreamingData,
@@ -206,7 +262,10 @@ function useBLE(): BLEAPI {
         messages,
         isScanning,
         characteristic,
-        onMessageUpdate
-    }
+        onMessageUpdate,
+        stopScan
+    };
 }
+
+export default useBLE;
 

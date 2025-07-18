@@ -257,11 +257,10 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
             userDetails.connectedUsers?.map((caretaker, index) => (
               <View
                 key={caretaker._id}
-                className={`flex-row justify-between items-center py-3 ${
-                  index < userDetails.connectedUsers!.length - 1
+                className={`flex-row justify-between items-center py-3 ${index < userDetails.connectedUsers!.length - 1
                     ? "border-b border-gray-100"
                     : ""
-                }`}
+                  }`}
               >
                 <View className="flex-row items-center">
                   <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">

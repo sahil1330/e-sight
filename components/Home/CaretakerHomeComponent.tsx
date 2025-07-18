@@ -166,9 +166,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
           <View className="flex-row border-b border-gray-200 mb-3">
             <TouchableOpacity
               onPress={() => setSelectedTab("all")}
-              className={`py-2 px-4 ${
-                selectedTab === "all" ? "border-b-2 border-indigo-500" : ""
-              }`}
+              className={`py-2 px-4 ${selectedTab === "all" ? "border-b-2 border-indigo-500" : ""
+                }`}
             >
               <Text
                 className={
@@ -182,9 +181,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSelectedTab("active")}
-              className={`py-2 px-4 ${
-                selectedTab === "active" ? "border-b-2 border-indigo-500" : ""
-              }`}
+              className={`py-2 px-4 ${selectedTab === "active" ? "border-b-2 border-indigo-500" : ""
+                }`}
             >
               <Text
                 className={
@@ -198,9 +196,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setSelectedTab("inactive")}
-              className={`py-2 px-4 ${
-                selectedTab === "inactive" ? "border-b-2 border-indigo-500" : ""
-              }`}
+              className={`py-2 px-4 ${selectedTab === "inactive" ? "border-b-2 border-indigo-500" : ""
+                }`}
             >
               <Text
                 className={
@@ -226,11 +223,10 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
               return (
                 <TouchableOpacity
                   key={blindUser._id}
-                  className={`flex-row justify-between items-center py-3 ${
-                    index < userDetails.connectedUsers!.length - 1
+                  className={`flex-row justify-between items-center py-3 ${index < userDetails.connectedUsers!.length - 1
                       ? "border-b border-gray-100"
                       : ""
-                  }`}
+                    }`}
                   activeOpacity={0.7}
                 >
                   <View className="flex-row items-center">
@@ -250,9 +246,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
                   </View>
                   <View className="flex-row items-center">
                     <View
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        status === "active" ? "bg-green-500" : "bg-gray-300"
-                      } mr-2`}
+                      className={`h-2.5 w-2.5 rounded-full ${status === "active" ? "bg-green-500" : "bg-gray-300"
+                        } mr-2`}
                     />
                     <TouchableOpacity className="p-2">
                       <Ionicons
