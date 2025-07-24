@@ -1,19 +1,23 @@
+import { PREVIOUS_DEVICES } from "@/utils/constants";
+import { registeredDevices } from "@/utils/devices";
+import { Buffer } from "buffer";
 import * as ExpoDevice from "expo-device";
-import { useEffect, useMemo, useState } from "react";
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PermissionsAndroid, Platform } from "react-native";
 import { BleError, BleManager, Characteristic, Device } from "react-native-ble-plx";
-
 interface BLEAPI {
     requestPermissions(): Promise<boolean>;
     scanForPeripherals(): void;
     connectToDevice(device: Device): Promise<void>;
     disconnectFromDevice(): Promise<void>; // Remove deviceId parameter
     connectedDevice: Device | null;
+    setConnectedDevice: (device: Device | null) => void; // Add setter for connectedDevice
     allDevices: Device[];
     messages: string[];
     isScanning: boolean;
     characteristic: Characteristic | null;
-    startStreamingData(device: Device): Promise<void>;
+    startStreamingData(device: Device, writeCharacteristic: Characteristic | null): Promise<void>;
     onMessageUpdate(error: BleError | null, characteristic: Characteristic | null): Promise<number>;
     stopScan(): void; // Add stop scan method
 }
@@ -122,13 +126,30 @@ function useBLE(): BLEAPI {
                     return;
                 }
                 if (device && device.name) { // Only add devices with names
-                    setAllDevices(prevDevices => {
-                        if (!isDuplicateDevice(prevDevices, device)) {
-                            console.log("Discovered device:", device.name);
-                            return [...prevDevices, device];
+                    registeredDevices.map(async (registeredDevice) => {
+                        if (device.name === registeredDevice.model) {
+                            console.log("Registered device found:", device.name);
+                            console.log("Device ID:", device.id);
+                            const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
+                            const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
+                            if (prevDevicesArray.some((prevDevice: Device) => prevDevice.id === device.id)) {
+                                console.log("Previously connected device found:", device.name);
+                                stopScan();
+                                connectToDevice(device);
+                                return;
+                            }
+                            //console.log("Device Manufacturer Data:", device.manufacturerData);
+                            // console.log("Device RSSI:", device.rssi);
+                            // console.log("Device Manufacturer Data:", device.manufacturerData);
+                            setAllDevices(prevDevices => {
+                                if (!isDuplicateDevice(prevDevices, device)) {
+                                    console.log("Discovered device:", device.name);
+                                    return [...prevDevices, device];
+                                }
+                                return prevDevices;
+                            });
                         }
-                        return prevDevices;
-                    });
+                    })
                 }
             }
         );
@@ -167,7 +188,15 @@ function useBLE(): BLEAPI {
             }
 
             setConnectedDevice(deviceConnection);
-
+            const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
+            const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
+            if (!prevDevicesArray.some((prevDevice: Device) => prevDevice.id === deviceConnection.id)) {
+                prevDevicesArray.push(deviceConnection);
+                await SecureStore.deleteItemAsync(PREVIOUS_DEVICES);
+                console.log("Adding device to SecureStore:", deviceConnection.name || "Unnamed Device");
+                await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(prevDevicesArray));
+            }
+            console.log("Devices stored in SecureStore:", await SecureStore.getItemAsync(PREVIOUS_DEVICES));
             await deviceConnection.discoverAllServicesAndCharacteristics();
             try {
                 await deviceConnection.requestMTU(512);
@@ -180,7 +209,7 @@ function useBLE(): BLEAPI {
             console.log("Services found:", services.length);
 
             if (services.length > 0) {
-                const characteristics = await deviceConnection.characteristicsForService(services[0].uuid);
+                const characteristics = await deviceConnection.characteristicsForService(services[2].uuid);
                 // const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
                 console.log("Characteristics found:", characteristics.length);
                 console.log("Characteristics found:", characteristics.map(c => c.uuid));
@@ -188,7 +217,9 @@ function useBLE(): BLEAPI {
                 const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
                 console.log("Write characteristic found:", JSON.stringify(writeCharacteristic?.uuid));
                 setCharacteristic(writeCharacteristic || null);
-                startStreamingData(deviceConnection);
+                if (writeCharacteristic) {
+                    startStreamingData(deviceConnection, writeCharacteristic);
+                }
             }
         } catch (error) {
             console.error("Error connecting to device:", error);
@@ -212,7 +243,7 @@ function useBLE(): BLEAPI {
         }
     };
 
-    const onMessageUpdate = async (error: BleError | null, characteristic: Characteristic | null) => {
+    const onMessageUpdate = useCallback(async (error: BleError | null, characteristic: Characteristic | null) => {
         if (error) {
             console.error("Error monitoring characteristic:", error);
             return -1;
@@ -223,7 +254,7 @@ function useBLE(): BLEAPI {
         }
 
         try {
-            const value = Buffer.from(characteristic.value, 'base64').toString('utf-8');
+            const value = (Buffer.from(characteristic.value, 'base64')).toString('utf-8');
             console.log("Received data:", value);
             setMessages(prevMessages => [...prevMessages, value]);
             return 0;
@@ -231,25 +262,25 @@ function useBLE(): BLEAPI {
             console.error("Error decoding characteristic value:", decodeError);
             return -1;
         }
-    };
+    }, []);
 
-    const startStreamingData = async (device: Device) => {
+    const startStreamingData = useCallback(async (device: Device, writeCharacteristic: Characteristic | null) => {
         try {
             console.log("Starting data stream for device:", device.name || "Unnamed Device");
-            console.log("Starting data stream for characteristic:", characteristic?.uuid);
-            if (!characteristic) {
+            console.log("Starting data stream for characteristic:", writeCharacteristic?.uuid);
+            if (!writeCharacteristic) {
                 return;
             }
             // Start monitoring the characteristic
             device.monitorCharacteristicForService(
-                characteristic.serviceUUID,
-                characteristic.uuid,
+                writeCharacteristic.serviceUUID,
+                writeCharacteristic.uuid,
                 onMessageUpdate
             );
         } catch (error) {
             console.error("Error starting data stream:", error);
         }
-    };
+    }, [onMessageUpdate]);
 
     return {
         startStreamingData,
@@ -258,6 +289,7 @@ function useBLE(): BLEAPI {
         connectToDevice,
         disconnectFromDevice,
         connectedDevice,
+        setConnectedDevice,
         allDevices,
         messages,
         isScanning,

@@ -1,7 +1,7 @@
 import useBLE from "@/hooks/useBLE";
 import Entypo from "@expo/vector-icons/Entypo";
 import Feather from "@expo/vector-icons/Feather";
-import React from "react";
+import React, { useEffect } from "react";
 import { ActivityIndicator, Alert, FlatList, Modal, Text, TouchableOpacity, View } from "react-native";
 import { Device } from "react-native-ble-plx";
 
@@ -20,8 +20,29 @@ const ConnectToDevice = () => {
     allDevices,
     isScanning,
     stopScan,
-    startStreamingData
+    // startStreamingData
   } = useBLE();
+
+  useEffect(() => {
+    // Update device name and connection status when connectedDevice changes
+    if (connectedDevice) {
+      setDeviceName(connectedDevice.name || "Unknown Device");
+      setIsDeviceConnected(true);
+    } else {
+      setDeviceName("");
+      setIsDeviceConnected(false);
+    }
+  }, [connectedDevice])
+
+  useEffect(() => {
+    if (isScanning) {
+      console.log("Scanning for devices...");
+      setModalVisible(true);
+    } else {
+      console.log("Stopped scanning.");
+      setModalVisible(false);
+    }
+  }, [isScanning])
 
   // Handle device connection
   const handleConnectToDevice = async (device: Device) => {
@@ -33,7 +54,7 @@ const ConnectToDevice = () => {
       setModalVisible(false);
 
       // Start streaming data after connection
-      await startStreamingData(device);
+      // await startStreamingData(device);
 
       Alert.alert("Success", `Connected to ${device.name || "Unknown Device"}`);
     } catch (error) {

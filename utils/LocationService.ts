@@ -38,16 +38,16 @@ class LocationService {
                 reconnectionDelay: 1000,
                 timeout: 20000,
             });
-            
+
             // Only set up listeners if we're creating a new socket
             this.socket.on("connect", () => {
                 console.log("Socket connected:", this.socket?.id);
             });
-            
+
             this.socket.on("disconnect", (reason) => {
                 console.log("Socket disconnected:", reason);
             });
-            
+
             this.socket.on("connect_error", (error) => {
                 console.log("Socket connection error:", error);
             });
@@ -134,7 +134,7 @@ class LocationService {
 
             // Store a heartbeat timestamp to help monitor the service
             await SecureStore.setItemAsync("locationLastHeartbeat", Date.now().toString());
-            
+
             // Start background location task with settings optimized for 24/7 operation
             await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
                 accuracy: Location.Accuracy.Balanced, // Use balanced instead of best for battery
@@ -176,7 +176,7 @@ class LocationService {
                 this.socket.disconnect();
                 this.socket = undefined;
             }
-            
+
             // Clean up global socket
             if (globalSocket) {
                 globalSocket.removeAllListeners();
@@ -186,17 +186,17 @@ class LocationService {
 
             // Cancel all notifications
             await Notifications.cancelAllScheduledNotificationsAsync();
-            
+
             this.notificationId = null;
             this.isServiceRunning = false;
-            
+
             // Clean up stored data
             await SecureStore.setItemAsync("locationServiceRunning", "false");
             await SecureStore.deleteItemAsync("locationLastHeartbeat");
             await SecureStore.deleteItemAsync("serviceStartTime");
             await SecureStore.deleteItemAsync("lastLocationData");
             await SecureStore.deleteItemAsync("pendingLocationData");
-            
+
             console.log("Background location service stopped successfully");
             return true;
         } catch (error) {
@@ -224,12 +224,12 @@ let globalSocket: Socket | null = null;
 const ensureSocketConnection = async (): Promise<Socket | null> => {
     if (!globalSocket || !globalSocket.connected) {
         console.log("Creating/reconnecting global socket for background updates");
-        
+
         if (globalSocket) {
             globalSocket.removeAllListeners();
             globalSocket.disconnect();
         }
-        
+
         globalSocket = io(process.env.EXPO_PUBLIC_REST_API_BASE_URL!, {
             transports: ["websocket"],
             autoConnect: true,
@@ -239,11 +239,11 @@ const ensureSocketConnection = async (): Promise<Socket | null> => {
             timeout: 20000,
             forceNew: true, // Force new connection
         });
-        
+
         globalSocket.on("connect", () => {
             console.log("Global socket connected:", globalSocket?.id);
         });
-        
+
         globalSocket.on("disconnect", (reason) => {
             console.log("Global socket disconnected:", reason);
             // Auto-reconnect on disconnect
@@ -253,22 +253,22 @@ const ensureSocketConnection = async (): Promise<Socket | null> => {
                 }
             }, 2000);
         });
-        
+
         globalSocket.on("connect_error", (error) => {
             console.log("Global socket connection error:", error);
         });
-        
+
         globalSocket.on("reconnect", (attemptNumber) => {
             console.log("Global socket reconnected after", attemptNumber, "attempts");
         });
-        
+
         // Wait for connection with longer timeout
         return new Promise((resolve) => {
             const timeout = setTimeout(() => {
                 console.log("Socket connection timeout - but continuing anyway");
                 resolve(globalSocket); // Return socket even if not connected yet
             }, 10000);
-            
+
             if (globalSocket?.connected) {
                 clearTimeout(timeout);
                 resolve(globalSocket);
@@ -280,7 +280,7 @@ const ensureSocketConnection = async (): Promise<Socket | null> => {
             }
         });
     }
-    
+
     return globalSocket;
 };
 
@@ -290,33 +290,33 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
             console.error("Location task error:", error);
             return { success: false, error };
         }
-        
+
         // Update heartbeat timestamp
         const heartbeat = Date.now().toString();
         await SecureStore.setItemAsync("locationLastHeartbeat", heartbeat);
-        
+
         // Check if data is available
         if (data) {
             const { locations } = data;
-            
+
             // Only proceed if we have location data
             if (locations && locations.length > 0) {
                 console.log("Processing location update at:", new Date().toLocaleTimeString());
-                
+
                 // Ensure socket connection (non-blocking)
                 const socket = await ensureSocketConnection();
-                
+
                 const userState = await SecureStore.getItemAsync("authState");
                 const parsedUserState = userState ? JSON.parse(userState) : null;
-                
+
                 if (!parsedUserState || !parsedUserState.userDetails || !parsedUserState.userDetails._id) {
                     console.error("User ID not found in authState");
                     return { success: false, error: "No user auth" };
                 }
-                
+
                 const userId = parsedUserState.userDetails._id;
                 const location = locations[0]; // Use only the latest location
-                
+
                 const locationData = {
                     userId,
                     location: {
@@ -328,19 +328,19 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                         timestamp: location.timestamp
                     }
                 };
-                
+
                 // Try to emit the location data
                 if (socket) {
                     console.log("Emitting location update:", new Date().toLocaleTimeString());
                     socket.emit("locationUpdate", locationData);
-                    
+
                     // Store the last location for recovery
                     await SecureStore.setItemAsync("lastLocationData", JSON.stringify(locationData));
                 } else {
                     console.log("No socket available, storing location for later");
                     await SecureStore.setItemAsync("pendingLocationData", JSON.stringify(locationData));
                 }
-                
+
                 // Update notification (non-blocking)
                 Notifications.scheduleNotificationAsync({
                     content: {
@@ -353,11 +353,11 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                 }).catch((notifError) => {
                     console.log("Notification error:", notifError);
                 });
-                
+
                 return { success: true };
             }
         }
-        
+
         return { success: true, message: "No location data" };
     } catch (error: any) {
         console.error("Critical error in background location task:", error);

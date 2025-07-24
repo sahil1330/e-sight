@@ -258,8 +258,8 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
               <View
                 key={caretaker._id}
                 className={`flex-row justify-between items-center py-3 ${index < userDetails.connectedUsers!.length - 1
-                    ? "border-b border-gray-100"
-                    : ""
+                  ? "border-b border-gray-100"
+                  : ""
                   }`}
               >
                 <View className="flex-row items-center">
