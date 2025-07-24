@@ -4,13 +4,12 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Modal,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  useWindowDimensions,
+  useWindowDimensions
 } from "react-native";
 import ConnectToBlind from "./connectToBlind";
 
@@ -224,8 +223,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
                 <TouchableOpacity
                   key={blindUser._id}
                   className={`flex-row justify-between items-center py-3 ${index < userDetails.connectedUsers!.length - 1
-                      ? "border-b border-gray-100"
-                      : ""
+                    ? "border-b border-gray-100"
+                    : ""
                     }`}
                   activeOpacity={0.7}
                 >
@@ -321,15 +320,37 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
         </View>
       </View>
       <Modal visible={ModalVisible} animationType="slide" transparent>
-        <View className="flex-1 justify-center items-center border-black bg-gray-800 bg-opacity-50 p-4">
-          <View className="bg-white rounded-lg p-6 w-11/12 max-w-md border border-gray-300 shadow-lg px-4 py-4">
-            <ConnectToBlind userDetails={userDetails} />
-            <Pressable
-              onPress={() => setModalVisible(false)}
-              className="bg-indigo-600 py-2 px-4 rounded-full"
-            >
-              <Text className="text-white text-center">Close</Text>
-            </Pressable>
+        <View className="flex-1 justify-center items-center bg-gray-800 bg-opacity-50">
+          <View className="bg-white rounded-lg w-11/12 max-w-md shadow-lg">
+            {/* Modal Header */}
+            <View className="border-b border-gray-200 px-6 py-4">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-lg font-semibold text-gray-800">
+                  Add Person to Care
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  className="p-1"
+                >
+                  <Ionicons name="close" size={24} color="#6b7280" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Modal Content */}
+            <View className="px-6 py-4">
+              <ConnectToBlind userDetails={userDetails} />
+            </View>
+
+            {/* Modal Footer */}
+            <View className="border-t border-gray-200 px-6 py-4">
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                className="bg-indigo-600 py-3 px-4 rounded-lg w-full"
+              >
+                <Text className="text-white text-center font-medium">Close</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

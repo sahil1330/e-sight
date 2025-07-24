@@ -3,8 +3,8 @@ import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import * as TaskManager from "expo-task-manager";
 import { io, Socket } from "socket.io-client";
+import { LAST_LOCATION_TOKEN, LOCATION_TASK_NAME, PENDING_LOCATION_TOKEN } from "./constants";
 
-const LOCATION_TASK_NAME = "background-location-task";
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldPlaySound: false,
@@ -335,10 +335,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                     socket.emit("locationUpdate", locationData);
 
                     // Store the last location for recovery
-                    await SecureStore.setItemAsync("lastLocationData", JSON.stringify(locationData));
+                    await SecureStore.setItemAsync(LAST_LOCATION_TOKEN, JSON.stringify(locationData));
                 } else {
                     console.log("No socket available, storing location for later");
-                    await SecureStore.setItemAsync("pendingLocationData", JSON.stringify(locationData));
+                    await SecureStore.setItemAsync(PENDING_LOCATION_TOKEN, JSON.stringify(locationData));
                 }
 
                 // Update notification (non-blocking)

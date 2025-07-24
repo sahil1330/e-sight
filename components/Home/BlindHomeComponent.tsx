@@ -1,16 +1,20 @@
 import User from "@/schema/userSchema";
+import { LAST_LOCATION_TOKEN } from "@/utils/constants";
 import LocationService from "@/utils/LocationService";
+import { sendSOS } from "@/utils/sendSOSFeature";
 import { Ionicons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   AppState,
   AppStateStatus,
+  Modal,
   RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import ConnectToDevice from "./ConnectToDevice";
 
@@ -22,7 +26,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const locationService = useRef(new LocationService()).current;
   const appState = useRef(AppState.currentState);
-
+  const [modalVisible, setModalVisible] = useState(false);
   useEffect(() => {
     checkServiceStatus();
 
@@ -147,6 +151,32 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
     setTimeout(() => setRefreshing(false), 2000);
   }, []);
 
+  const handleEmergencyPress = () => {
+    Alert.alert(
+      "Emergency Assistance",
+      "Do you want to notify your caretakers?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Notify",
+          onPress: async () => {
+            // Add logic to notify caretakers
+            try {
+              const locationData = JSON.parse(await SecureStore.getItemAsync(LAST_LOCATION_TOKEN) || "{}");
+              await sendSOS(userDetails, locationData.location);
+            } catch (error) {
+              console.error("Error sending SOS:", error);
+              Alert.alert("Error", "Failed to send SOS message. Please try again.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const isVerified = userDetails.isVerified || false;
   const hasCaretakers =
     userDetails.connectedUsers && userDetails.connectedUsers.length > 0;
@@ -247,6 +277,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
             <TouchableOpacity
               className="bg-blue-500 rounded-full py-1 px-3 flex-row items-center"
               activeOpacity={0.8}
+              onPress={() => setModalVisible(true)}
             >
               <Ionicons name="person-add-outline" size={14} color="white" />
               <Text className="text-white text-xs ml-1">Add</Text>
@@ -303,6 +334,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         <TouchableOpacity
           className="bg-red-500 mt-6 py-4 rounded-xl shadow-md"
           activeOpacity={0.8}
+          onPress={handleEmergencyPress}
         >
           <View className="flex-row justify-center items-center">
             <Ionicons name="alert-circle-outline" size={24} color="white" />
@@ -312,6 +344,36 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* Show QR Code Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
+          <View className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <Text className="text-gray-800 text-lg font-semibold mb-4">
+              Your QR Code
+            </Text>
+            <Text className="text-gray-600 mb-4">
+              Share this QR code with your caretakers to connect with them.
+            </Text>
+            {/* QR Code Component would go here */}
+            <View className="bg-gray-200 h-40 w-full rounded-lg mb-4 justify-center items-center">
+              {/* Placeholder for QR Code */}
+              <Text className="text-gray-500">QR Code Placeholder</Text>
+            </View>
+            <TouchableOpacity
+              className="bg-blue-500 py-2 px-4 rounded-full mt-4"
+              onPress={() => setModalVisible(false)}
+            >
+              <Text className="text-white text-center">Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
