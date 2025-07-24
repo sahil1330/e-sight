@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import User from "@/schema/userSchema";
 import { LAST_LOCATION_TOKEN } from "@/utils/constants";
 import LocationService from "@/utils/LocationService";
@@ -27,6 +28,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   const [lastUpdate, setLastUpdate] = useState<string | null>(null);
   const locationService = useRef(new LocationService()).current;
   const appState = useRef(AppState.currentState);
+  const { refreshUserState } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
   useEffect(() => {
     checkServiceStatus();
@@ -146,11 +148,19 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
     }
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     // Add your refresh logic here
-    setTimeout(() => setRefreshing(false), 2000);
-  }, []);
+    if (refreshUserState) {
+      const result = await refreshUserState();
+      if (result.isError) {
+        setError(result.message);
+      } else {
+        Alert.alert("Success", "User state refreshed successfully");
+      }
+    }
+    setRefreshing(false);
+  }, [refreshUserState]);
 
   const handleEmergencyPress = () => {
     Alert.alert(

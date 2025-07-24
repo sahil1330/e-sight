@@ -11,7 +11,7 @@ Notifications.setNotificationHandler({
         shouldSetBadge: false,
         shouldShowBanner: true,
         shouldShowList: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        // priority: Notifications.AndroidNotificationPriority.HIGH
     }),
 })
 
@@ -137,7 +137,7 @@ class LocationService {
 
             // Start background location task with settings optimized for 24/7 operation
             await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-                accuracy: Location.Accuracy.Balanced, // Use balanced instead of best for battery
+                accuracy: Location.Accuracy.Highest, // Use balanced instead of best for battery
                 timeInterval: 30000, // 30 seconds - less frequent to preserve battery
                 distanceInterval: 50, // 50 meters
                 deferredUpdatesInterval: 30000,
@@ -347,7 +347,7 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                         title: "Location tracking active",
                         body: `Location sent at ${new Date().toLocaleTimeString()}`,
                         sticky: true,
-                        priority: Notifications.AndroidNotificationPriority.HIGH,
+                        priority: Notifications.AndroidNotificationPriority.LOW,
                     },
                     trigger: null,
                 }).catch((notifError) => {

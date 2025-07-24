@@ -96,7 +96,7 @@ export default function PasswordScreen() {
       }
       if (isAxiosError(error)) {
         // Handle Axios error
-        const errorMessage = getErrorMessage(error.response?.data || "");
+        const errorMessage = await getErrorMessage(error.response?.data || "");
         setError(errorMessage);
         console.error("Error changing password:", errorMessage);
       }

@@ -1,8 +1,10 @@
+import { useAuth } from "@/context/AuthContext";
 import User from "@/schema/userSchema";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   Modal,
   RefreshControl,
   ScrollView,
@@ -18,13 +20,29 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
   const [ModalVisible, setModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const [selectedTab, setSelectedTab] = useState("all"); // 'all', 'active', 'inactive'
+  const [error, setError] = useState<string | null>(null);
+
   const router = useRouter();
-  const onRefresh = React.useCallback(() => {
+  const { refreshUserState } = useAuth();
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     // Add your refresh logic here
-    setTimeout(() => setRefreshing(false), 2000);
-  }, []);
-
+    if (refreshUserState) {
+      const result = await refreshUserState();
+      if (result.isError) {
+        setError(result.message);
+      } else {
+        Alert.alert("Success", "User state refreshed successfully");
+      }
+    }
+    setRefreshing(false);
+  }, [refreshUserState]);
+  useEffect(() => {
+    if (error) {
+      Alert.alert("Error", error);
+      setError(null); // Reset error after showing alert
+    }
+  }, [error]);
   const isVerified = userDetails.isVerified || false;
   const hasBlindUsers =
     userDetails.connectedUsers && userDetails.connectedUsers.length > 0;

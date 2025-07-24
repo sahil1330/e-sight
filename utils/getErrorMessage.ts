@@ -3,7 +3,7 @@
  * @param errorHtml - HTML string containing the error message
  * @returns The clean error message without HTML tags and "Error:" prefix
  */
-export function getErrorMessage(errorHtml: string): string {
+export async function getErrorMessage(errorHtml: string): Promise<string> {
     try {
         // Extract content between <pre> tags
         const preTagMatch = errorHtml.match(/<pre>(.*?)<\/pre>/s);

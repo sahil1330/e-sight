@@ -24,6 +24,8 @@ interface AuthProps {
   verifyEmail?: (email: string, code: string) => Promise<any>;
   login?: (identifier: string, password: string) => Promise<any>;
   logout?: () => Promise<any>;
+  updateConnectedUsers?: (connectedUsers: User) => Promise<any>;
+  refreshUserState?: () => Promise<any>;
   isLoading?: boolean;
   setAuthState?: any;
   isReady?: boolean;
@@ -46,9 +48,9 @@ export const AuthProvider = ({ children }: any) => {
   const [isReady, setIsReady] = useState<boolean>(false);
 
   const storeAuthStateInStorage = async (newState: {
-    authenticated: boolean;
-    userDetails: User;
-    token: string;
+    authenticated: boolean | undefined;
+    userDetails: User | undefined;
+    token: string | undefined;
   }) => {
     try {
       const jsonValue = JSON.stringify(newState);
@@ -85,6 +87,17 @@ export const AuthProvider = ({ children }: any) => {
       SplashScreen.hideAsync();
     }
   }, [isReady]);
+
+  useEffect(() => {
+    if (authState?.token) {
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${authState.token}`;
+    } else {
+      axiosInstance.defaults.headers.common["Authorization"] = "";
+    }
+    if (authState?.userDetails) {
+      storeAuthStateInStorage(authState);
+    }
+  }, [authState]);
 
   const register = async (
     fullName: string,
@@ -149,7 +162,7 @@ export const AuthProvider = ({ children }: any) => {
       console.error("Login error:", error);
       if (isAxiosError(error)) {
         console.error("Axios error:", error);
-        const errorMessage = getErrorMessage((error as any).response?.data);
+        const errorMessage = await getErrorMessage((error as any).response?.data);
         return { isError: true, message: errorMessage };
       }
       return {
@@ -216,9 +229,65 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
+  const updateConnectedUsers = async (connectedUser: User) => {
+    try {
+      setAuthState(prev => {
+        if (!prev || !prev.userDetails) {
+          throw new Error("User details not found in auth state");
+        }
+        prev.userDetails.connectedUsers?.push(connectedUser);
+        console.log("Updated connected users in auth context:", prev.userDetails.connectedUsers);
+
+        return {
+          ...prev,
+          userDetails: {
+            ...prev.userDetails,
+            connectedUsers: prev.userDetails.connectedUsers,
+          },
+        };
+      });
+      return { success: true, message: "Connected users updated successfully" };
+    } catch (error) {
+      console.error("Error updating connected users:", error);
+      if (error instanceof Error) {
+        return { isError: true, message: error.message };
+      }
+    }
+  }
+
+  const refreshUserState = async () => {
+    try {
+      const response = await axiosInstance.get("/users/current-user");
+      if (!response || response.status !== 200) {
+        throw new Error("Failed to refresh user state");
+      }
+      const newState = {
+        token: authState?.token,
+        authenticated: true,
+        userDetails: response.data.data,
+      };
+      setAuthState(newState);
+      // await storeAuthStateInStorage(newState);
+      axiosInstance.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${newState.token}`;
+      return { success: true, message: "User state refreshed successfully" };
+    } catch (error) {
+      console.error("Error refreshing user state:", error);
+      if (error instanceof Error) {
+        return { isError: true, message: error.message };
+      }
+      if (isAxiosError(error)) {
+        const errorMessage = await getErrorMessage(error.response?.data || "");
+        return { isError: true, message: errorMessage };
+      }
+      return { isError: true, message: "Failed to refresh user state" };
+    }
+  }
+
   return (
     <AuthContext.Provider
-      value={{ register, login, logout, verifyEmail, isReady, authState }}
+      value={{ register, login, logout, verifyEmail, isReady, authState, updateConnectedUsers, refreshUserState }}
     >
       {children}
     </AuthContext.Provider>

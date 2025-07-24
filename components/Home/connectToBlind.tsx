@@ -1,5 +1,9 @@
+import { useAuth } from "@/context/AuthContext";
 import User from "@/schema/userSchema";
+import axiosInstance from "@/utils/axiosInstance";
+import { getErrorMessage } from "@/utils/getErrorMessage";
 import { Ionicons } from "@expo/vector-icons";
+import { isAxiosError } from "axios";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -12,19 +16,19 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const { updateConnectedUsers } = useAuth();
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
     console.log(`QR code scanned! Type: ${type} Data: ${data}`);
 
     try {
-      // Parse the QR code data (assuming it contains user info as JSON)
-      const blindUserData = JSON.parse(data);
-      console.log("Blind user data:", blindUserData);
+      // Parse the QR code data (assuming it contains user info as JSON
+      console.log("Blind user ID:", data);
 
       Alert.alert(
         "QR Code Scanned",
-        `Connect with ${blindUserData.name || "this user"}?`,
+        `Connect with user ID ${data}?`,
         [
           {
             text: "Cancel",
@@ -33,23 +37,55 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
           },
           {
             text: "Connect",
-            onPress: () => handleConnectBlindUser(blindUserData),
+            onPress: () => handleConnectBlindUser(data),
           },
         ]
       );
     } catch (error) {
+      console.error("Error parsing QR code data:", error);
+      if (isAxiosError(error)) {
+        getErrorMessage(error.response?.data || "").then((errorMessage) => {
+          console.error("Error message from server:", errorMessage);
+          Alert.alert("Error", "Something went wrong while processing the QR code.");
+        });
+      }
       Alert.alert("Invalid QR Code", "This QR code is not valid for connecting users.");
       setScanned(false);
     }
   };
 
-  const handleConnectBlindUser = async (blindUserData: any) => {
+  const handleConnectBlindUser = async (blindUserId: string) => {
     try {
       // Add your API call here to connect to blind user
-      console.log("Connecting to blind user:", blindUserData);
+      console.log("Connecting to blind user:", blindUserId);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const response = await axiosInstance.post("/user-connections", {
+        blindId: blindUserId,
+        caretakerId: userDetails._id,
+      });
+
+      if (response.status !== 201) {
+        throw new Error("Failed to connect to user");
+      }
+
+      console.log("Connection response:", response.data);
+      const { blind, caretaker } = response.data.data;
+      console.log("Connected to blind user:", blind, "by caretaker:", caretaker);
+      // Update connected users in auth context
+
+      if (!blind || !caretaker) {
+        throw new Error("Invalid connection data received");
+      }
+      if (updateConnectedUsers) {
+        const result = await updateConnectedUsers(blind);
+        if (result.success) {
+          Alert.alert("Success", result.message);
+        } else {
+          Alert.alert("Error", result.message);
+        }
+      }
+      // Show success message
+
 
       Alert.alert("Success", "Successfully connected to user!");
       setShowCamera(false);
@@ -58,6 +94,13 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
       Alert.alert("Error", "Failed to connect to user");
       console.error("Connection error:", error);
       setScanned(false);
+      if (error instanceof Error) {
+        Alert.alert("Error", error.message);
+      }
+      if (isAxiosError(error)) {
+        const errorMessage = await getErrorMessage(error.response?.data || "");
+        Alert.alert("Error", errorMessage);
+      }
     }
   };
 
