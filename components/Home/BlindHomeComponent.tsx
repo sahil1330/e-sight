@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import ConnectToDevice from "./ConnectToDevice";
 
 const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
@@ -354,22 +355,26 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
       >
         <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
           <View className="bg-white rounded-lg p-6 w-11/12 max-w-md">
-            <Text className="text-gray-800 text-lg font-semibold mb-4">
-              Your QR Code
+            <Text className="text-gray-800 text-lg font-semibold mb-4 text-center">
+              Your Connection Code
             </Text>
-            <Text className="text-gray-600 mb-4">
-              Share this QR code with your caretakers to connect with them.
+            <Text className="text-gray-600 mb-4 text-center">
+              Share this code with your caretakers to connect with them.
             </Text>
-            {/* QR Code Component would go here */}
-            <View className="bg-gray-200 h-40 w-full rounded-lg mb-4 justify-center items-center">
-              {/* Placeholder for QR Code */}
-              <Text className="text-gray-500">QR Code Placeholder</Text>
+
+            <View className="bg-gray-100 border-2 border-dashed border-gray-300 h-48 w-full rounded-lg mb-4 justify-center items-center">
+              <QRCode
+                value={userDetails._id}
+                size={150}
+                backgroundColor="transparent"
+              />
             </View>
+
             <TouchableOpacity
-              className="bg-blue-500 py-2 px-4 rounded-full mt-4"
+              className="bg-blue-500 py-3 px-4 rounded-lg"
               onPress={() => setModalVisible(false)}
             >
-              <Text className="text-white text-center">Close</Text>
+              <Text className="text-white text-center font-medium">Close</Text>
             </TouchableOpacity>
           </View>
         </View>
