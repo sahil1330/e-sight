@@ -1,4 +1,5 @@
 import useBLE from "@/hooks/useBLE";
+import { Ionicons } from "@expo/vector-icons";
 import Entypo from "@expo/vector-icons/Entypo";
 import Feather from "@expo/vector-icons/Feather";
 import React, { useEffect } from "react";
@@ -111,19 +112,30 @@ const ConnectToDevice = () => {
 
   // Render device item
   const renderDevice = ({ item }: { item: Device }) => (
-    <View className="flex-row justify-between items-center p-4 border-b border-gray-200">
-      <View className="flex-1">
-        <Text className="text-lg font-semibold text-gray-800">
-          {item.name || "Unknown Device"}
-        </Text>
-        <Text className="text-sm text-gray-500">
-          {item.id}
-        </Text>
+    <View 
+      className="flex-row justify-between items-center p-4 border-b border-gray-100"
+      accessibilityRole="text"
+      accessibilityLabel={`Device: ${item.name || "Unknown Device"}, ID: ${item.id}`}
+    >
+      <View className="flex-1 flex-row items-center">
+        <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
+          <Ionicons name="bluetooth" size={20} color="#3B82F6" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-lg font-medium text-gray-800">
+            {item.name || "Unknown Device"}
+          </Text>
+          <Text className="text-sm text-gray-500" numberOfLines={1}>
+            {item.id}
+          </Text>
+        </View>
       </View>
       <TouchableOpacity
-        className="bg-blue-500 px-4 py-2 rounded-lg"
+        className="bg-blue-600 px-4 py-2 rounded-lg"
         onPress={() => handleConnectToDevice(item)}
         disabled={isConnecting}
+        accessibilityRole="button"
+        accessibilityLabel={`Connect to ${item.name || "Unknown Device"}`}
       >
         <Text className="text-white font-medium">
           {(item.id === connectedDevice?.id && isConnecting) ? "Connecting..." : "Connect"}
@@ -133,80 +145,107 @@ const ConnectToDevice = () => {
   );
 
   return (
-    <View className="flex-1 items-center justify-center">
+    <View className="w-full">
       {!isDeviceConnected ? (
-        <View className="connection-box w-2/3 rounded-lg p-4 bg-white shadow-md flex justify-center items-center">
-          <TouchableOpacity
-            className="rounded-full bg-blue-100 p-4 mb-4"
-            onPress={openModal}
-          >
-            <Entypo name="plus" size={24} color="black" />
-          </TouchableOpacity>
-          <Text className="text-gray-600 text-center">
-            Tap to connect to a device
-          </Text>
-        </View>
-      ) : (
-        <View className="connection-box w-full rounded-lg p-4 bg-green-50 shadow-md flex flex-row justify-between items-center relative">
-          <View className="flex-1">
-            <Text className="text-xl font-semibold mb-2 text-green-800">
-              {deviceName || "Connected Device"}
+        <View className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+          <View className="items-center">
+            <TouchableOpacity
+              className="w-16 h-16 rounded-full bg-blue-100 items-center justify-center mb-4"
+              onPress={openModal}
+              accessibilityRole="button"
+              accessibilityLabel="Connect to navigation device"
+              accessibilityHint="Double tap to scan for available navigation devices"
+            >
+              <Entypo name="plus" size={32} color="#3B82F6" />
+            </TouchableOpacity>
+            <Text 
+              className="text-gray-700 text-lg text-center font-medium"
+              accessibilityLabel="No device connected. Tap the plus button to connect to a navigation device."
+            >
+              Connect Navigation Device
             </Text>
-            <Text className="text-sm text-green-600">
-              Status: Connected
+            <Text className="text-gray-500 text-base text-center mt-2">
+              Tap to scan for available devices
             </Text>
           </View>
-
-          <View className="relative">
-            <TouchableOpacity
-              className="p-2"
-              onPress={() => setShowPopover(!showPopover)}
-            >
-              <Feather name="more-vertical" size={24} color="black" />
-            </TouchableOpacity>
-
-            {/* Popover Menu */}
-            {showPopover && (
-              <>
-                {/* Backdrop to close popover */}
-                <TouchableOpacity
-                  className="absolute inset-0 w-screen h-screen -top-2 -right-2"
-                  style={{ zIndex: 1 }}
-                  onPress={() => setShowPopover(false)}
-                  activeOpacity={1}
-                />
-
-                {/* Popover Content */}
-                <View
-                  className="absolute right-0 top-10 bg-white rounded-lg shadow-lg border border-gray-200 min-w-40"
-                  style={{ zIndex: 10 }}
+        </View>
+      ) : (
+        <View className="bg-green-50 rounded-xl p-6 border border-green-200">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 flex-row items-center">
+              <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mr-4">
+                <Ionicons name="bluetooth" size={24} color="#059669" />
+              </View>
+              <View className="flex-1">
+                <Text 
+                  className="text-green-800 text-lg font-semibold"
+                  accessibilityLabel={`Connected to ${deviceName || "navigation device"}`}
                 >
-                  <TouchableOpacity
-                    className="px-4 py-3 border-b border-gray-100"
-                    onPress={handleDisconnectDevice}
-                  >
-                    <View className="flex-row items-center">
-                      <Feather name="x-circle" size={16} color="#EF4444" />
-                      <Text className="ml-2 text-red-500 font-medium">
-                        Disconnect
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                  {deviceName || "Connected Device"}
+                </Text>
+                <Text className="text-green-600 text-base">
+                  Status: Connected
+                </Text>
+              </View>
+            </View>
 
+            <View className="relative">
+              <TouchableOpacity
+                className="p-3"
+                onPress={() => setShowPopover(!showPopover)}
+                accessibilityRole="button"
+                accessibilityLabel="Device options menu"
+              >
+                <Feather name="more-vertical" size={24} color="#059669" />
+              </TouchableOpacity>
+
+              {/* Popover Menu */}
+              {showPopover && (
+                <>
+                  {/* Backdrop to close popover */}
                   <TouchableOpacity
-                    className="px-4 py-3"
+                    className="absolute inset-0 w-screen h-screen -top-3 -right-3"
+                    style={{ zIndex: 1 }}
                     onPress={() => setShowPopover(false)}
+                    activeOpacity={1}
+                  />
+
+                  {/* Popover Content */}
+                  <View
+                    className="absolute right-0 top-12 bg-white rounded-xl shadow-lg border border-gray-200 min-w-48"
+                    style={{ zIndex: 10 }}
                   >
-                    <View className="flex-row items-center">
-                      <Feather name="info" size={16} color="#6B7280" />
-                      <Text className="ml-2 text-gray-600 font-medium">
-                        Device Info
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
+                    <TouchableOpacity
+                      className="px-4 py-4 border-b border-gray-100"
+                      onPress={handleDisconnectDevice}
+                      accessibilityRole="button"
+                      accessibilityLabel="Disconnect device"
+                    >
+                      <View className="flex-row items-center">
+                        <Feather name="x-circle" size={18} color="#EF4444" />
+                        <Text className="ml-3 text-red-500 font-medium text-base">
+                          Disconnect
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className="px-4 py-4"
+                      onPress={() => setShowPopover(false)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Device information"
+                    >
+                      <View className="flex-row items-center">
+                        <Feather name="info" size={18} color="#6B7280" />
+                        <Text className="ml-3 text-gray-600 font-medium text-base">
+                          Device Info
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -217,35 +256,52 @@ const ConnectToDevice = () => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={closeModal}
+        accessibilityViewIsModal={true}
       >
-        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-          <View className="bg-white rounded-lg p-6 w-4/5 max-h-96">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-xl font-bold text-gray-800">
+        <View className="flex-1 justify-center items-center bg-black/50 px-6">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-md max-h-96">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text 
+                className="text-xl font-bold text-gray-800"
+                accessibilityRole="header"
+              >
                 Available Devices
               </Text>
-              <TouchableOpacity onPress={closeModal}>
+              <TouchableOpacity 
+                onPress={closeModal}
+                accessibilityRole="button"
+                accessibilityLabel="Close device selection"
+              >
                 <Feather name="x" size={24} color="black" />
               </TouchableOpacity>
             </View>
 
             {isScanning && (
-              <View className="flex-row items-center justify-center py-4">
-                <ActivityIndicator size="small" color="#3B82F6" />
-                <Text className="ml-2 text-gray-600">Scanning for devices...</Text>
+              <View className="flex-row items-center justify-center py-6">
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text className="ml-3 text-gray-600 text-lg">Scanning for devices...</Text>
               </View>
             )}
 
             {allDevices.length === 0 && !isScanning ? (
-              <View className="py-8 items-center">
-                <Text className="text-gray-500 text-center">
-                  No devices found. Make sure your device is discoverable.
+              <View className="py-12 items-center">
+                <Ionicons name="bluetooth-outline" size={64} color="#9CA3AF" />
+                <Text 
+                  className="text-gray-500 text-lg text-center mt-4"
+                  accessibilityLabel="No devices found. Make sure your navigation device is discoverable and nearby."
+                >
+                  No devices found
+                </Text>
+                <Text className="text-gray-400 text-base text-center mt-2">
+                  Make sure your device is discoverable
                 </Text>
                 <TouchableOpacity
-                  className="bg-blue-500 px-4 py-2 rounded-lg mt-4"
+                  className="bg-blue-600 px-6 py-3 rounded-xl mt-6"
                   onPress={scanForPeripherals}
+                  accessibilityRole="button"
+                  accessibilityLabel="Scan again for devices"
                 >
-                  <Text className="text-white font-medium">Scan Again</Text>
+                  <Text className="text-white font-medium text-base">Scan Again</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -258,27 +314,33 @@ const ConnectToDevice = () => {
               />
             )}
 
-            <View className="flex-row justify-between mt-4">
+            <View className="flex-row justify-between mt-6 space-x-3">
               <TouchableOpacity
-                className="bg-gray-300 px-4 py-2 rounded-lg flex-1 mr-2"
+                className="bg-gray-200 px-6 py-4 rounded-xl flex-1"
                 onPress={closeModal}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel device selection"
               >
-                <Text className="text-gray-700 font-medium text-center">Cancel</Text>
+                <Text className="text-gray-700 font-medium text-center text-base">Cancel</Text>
               </TouchableOpacity>
 
               {isScanning ? (
                 <TouchableOpacity
-                  className="bg-red-500 px-4 py-2 rounded-lg flex-1 ml-2"
+                  className="bg-red-600 px-6 py-4 rounded-xl flex-1 ml-3"
                   onPress={stopScan}
+                  accessibilityRole="button"
+                  accessibilityLabel="Stop scanning for devices"
                 >
-                  <Text className="text-white font-medium text-center">Stop Scan</Text>
+                  <Text className="text-white font-medium text-center text-base">Stop Scan</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  className="bg-blue-500 px-4 py-2 rounded-lg flex-1 ml-2"
+                  className="bg-blue-600 px-6 py-4 rounded-xl flex-1 ml-3"
                   onPress={scanForPeripherals}
+                  accessibilityRole="button"
+                  accessibilityLabel="Start scanning for devices"
                 >
-                  <Text className="text-white font-medium text-center">Scan</Text>
+                  <Text className="text-white font-medium text-center text-base">Scan</Text>
                 </TouchableOpacity>
               )}
             </View>

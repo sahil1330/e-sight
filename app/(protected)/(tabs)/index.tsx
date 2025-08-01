@@ -10,7 +10,7 @@ export default function HomeScreen() {
     return null;
   }
   return (
-    <SafeAreaView className="flex-1 justify-center items-center bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       {authState?.userDetails?.role === "caretaker" ? (
         <CaretakerHomeComponent userDetails={authState?.userDetails} />
       ) : (

@@ -7,10 +7,8 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useAuth } from "@/context/AuthContext";
-import { useColorScheme } from "@/hooks/useColorScheme";
 import Ionicons from "@expo/vector-icons/Ionicons";
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { authState, isReady } = useAuth();
   if (!isReady) {
     return null;
@@ -22,19 +20,31 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: Colors.primary.blue,
+        tabBarInactiveTintColor: Colors.text.light,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
             position: "absolute",
+            backgroundColor: Colors.background.primary,
+            borderTopWidth: 1,
+            borderTopColor: Colors.border.light,
+            paddingTop: 8,
+            height: 84,
           },
           android: {
-            // Use a solid background on Android
-            backgroundColor: Colors[colorScheme ?? "light"].background,
+            backgroundColor: Colors.background.primary,
+            borderTopWidth: 1,
+            borderTopColor: Colors.border.light,
             position: "absolute",
+            paddingTop: 8,
+            height: 70,
           },
           default: {},
         }),
@@ -44,9 +54,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 32 : 28} 
+              name="house.fill" 
+              color={color} 
+            />
           ),
+          tabBarAccessibilityLabel: "Home tab",
         }}
       />
       {
@@ -55,9 +70,14 @@ export default function TabLayout() {
             name="location"
             options={{
               title: "Location",
-              tabBarIcon: ({ color }) => (
-                <Ionicons name="location-sharp" size={24} color={color} />
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons 
+                  name="location-sharp" 
+                  size={focused ? 28 : 24} 
+                  color={color} 
+                />
               ),
+              tabBarAccessibilityLabel: "Location tracking tab",
             }}
           />
         ) : (
@@ -66,9 +86,14 @@ export default function TabLayout() {
             options={{
               href: null, // Disable direct navigation to this tab
               title: "Location",
-              tabBarIcon: ({ color }) => (
-                <Ionicons name="location-sharp" size={24} color={color} />
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons 
+                  name="location-sharp" 
+                  size={focused ? 28 : 24} 
+                  color={color} 
+                />
               ),
+              tabBarAccessibilityLabel: "Location tab (disabled for blind users)",
             }}
           />
         )
@@ -76,10 +101,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
-          title: "Notifications",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="notifications" size={24} color={color} />
+          title: "Alerts",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name="notifications" 
+              size={focused ? 28 : 24} 
+              color={color} 
+            />
           ),
+          tabBarAccessibilityLabel: "Notifications and alerts tab",
         }}
       />
       <Tabs.Screen
@@ -87,9 +117,14 @@ export default function TabLayout() {
         options={{
           headerShown: false,
           title: "Profile",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="person-circle-sharp" size={24} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons 
+              name="person-circle-sharp" 
+              size={focused ? 32 : 28} 
+              color={color} 
+            />
           ),
+          tabBarAccessibilityLabel: "Profile settings tab",
         }}
       />
     </Tabs>
