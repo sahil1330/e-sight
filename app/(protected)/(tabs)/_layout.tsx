@@ -49,15 +49,30 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="location"
-        options={{
-          title: "Location",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="location-sharp" size={24} color={color} />
-          ),
-        }}
-      />
+      {
+        authState.userDetails?.role === "caretaker" ? (
+          <Tabs.Screen
+            name="location"
+            options={{
+              title: "Location",
+              tabBarIcon: ({ color }) => (
+                <Ionicons name="location-sharp" size={24} color={color} />
+              ),
+            }}
+          />
+        ) : (
+          <Tabs.Screen
+            name="location"
+            options={{
+              href: null, // Disable direct navigation to this tab
+              title: "Location",
+              tabBarIcon: ({ color }) => (
+                <Ionicons name="location-sharp" size={24} color={color} />
+              ),
+            }}
+          />
+        )
+      }
       <Tabs.Screen
         name="notifications"
         options={{

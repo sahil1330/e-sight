@@ -2,6 +2,7 @@ import ProfileSection from "@/components/Profile/ProfileSection";
 import SettingsSwitch from "@/components/Profile/SettingsSwitch";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -16,7 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function SettingsScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  
+
   // Settings state
   const [settings, setSettings] = useState({
     pushNotifications: true,
@@ -27,13 +28,14 @@ export default function SettingsScreen() {
     biometricLogin: false,
   });
 
-  const updateSetting = (key: keyof typeof settings, value: boolean) => {
+  const updateSetting = async (key: keyof typeof settings, value: boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
     }));
-    
+
     // Here you would typically call an API to update user settings
+    await SecureStore.setItemAsync(key, JSON.stringify(value))
     console.log(`Setting ${key} updated to ${value}`);
   };
 
@@ -93,7 +95,7 @@ export default function SettingsScreen() {
             value={settings.biometricLogin}
             onValueChange={(value) => updateSetting("biometricLogin", value)}
           />
-          
+
           <TouchableOpacity
             className="flex-row justify-between items-center py-3 mt-2"
             onPress={handleExport}
@@ -105,7 +107,7 @@ export default function SettingsScreen() {
               <Ionicons name="download-outline" size={20} color="#3b82f6" />
             )}
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             className="flex-row justify-between items-center py-3"
             onPress={() => Alert.alert("Clear Data", "Are you sure you want to clear all app data? This will log you out.", [

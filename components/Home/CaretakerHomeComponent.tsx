@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  Linking,
   Modal,
   RefreshControl,
   ScrollView,
@@ -314,6 +315,7 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
             <TouchableOpacity
               className="items-center w-[30%]"
               activeOpacity={0.7}
+              onPress={() => router.push("/(protected)/(tabs)/location")}
             >
               <View className="w-12 h-12 rounded-full bg-blue-100 items-center justify-center mb-2">
                 <Ionicons name="location-outline" size={24} color="#3b82f6" />
@@ -326,6 +328,9 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
             <TouchableOpacity
               className="items-center w-[30%]"
               activeOpacity={0.7}
+              onPress={() => {
+                Linking.openURL(`tel:${userDetails.phone}`);
+              }}
             >
               <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mb-2">
                 <Ionicons name="call-outline" size={24} color="#10b981" />
