@@ -106,139 +106,188 @@ const VerifyEmail = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
-          className="flex-1 px-6"
-          contentContainerClassName="py-10"
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: 40,
+            paddingBottom: 40,
+          }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View className="items-center mb-8">
-            <View className="w-16 h-16 rounded-full bg-blue-100 items-center justify-center mb-4">
-              <Text className="text-blue-500 text-2xl font-bold">✓</Text>
+          {/* Header Section */}
+          <View className="items-center mb-10">
+            <View className="w-20 h-20 rounded-full bg-green-100 items-center justify-center mb-6">
+              <Text className="text-green-600 text-3xl font-bold">✓</Text>
             </View>
             <Text
               style={{ fontSize: headerFontSize }}
-              className="font-bold text-black text-center"
+              className="font-bold text-gray-900 text-center mb-2"
             >
               Verify Your Email
             </Text>
-            <Text className="text-gray-500 mt-2 text-center">
-              We have sent a verification code to your email
+            <Text className="text-gray-600 text-center text-lg">
+              We've sent a 6-digit verification code to your email address
             </Text>
           </View>
 
-          <View className="space-y-6">
-            {/* Email Field */}
-            <View>
-              <Text className="text-sm font-medium text-gray-700 ml-1 mb-1.5">
-                Email Address
-              </Text>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`border rounded-xl px-4 py-3.5 ${
-                      errors.email
-                        ? "border-red-500 bg-red-50"
-                        : focusedField === "email"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300"
-                    }`}
-                    style={{ fontSize }}
-                    placeholder="Enter your email"
-                    onBlur={() => {
-                      setFocusedField(null);
-                      onBlur();
-                    }}
-                    onFocus={() => setFocusedField("email")}
-                    onChangeText={onChange}
-                    value={value}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholderTextColor="#9ca3af"
-                  />
-                )}
-              />
-              {errors.email && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.email.message}
+          {/* Form Container */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <View className="space-y-6">
+              {/* Email Field */}
+              <View>
+                <Text className="text-base font-semibold text-gray-800 mb-3">
+                  Email Address
                 </Text>
-              )}
-            </View>
-
-            {/* Verification Code Field */}
-            <View>
-              <Text className="text-sm font-medium text-gray-700 ml-1 mb-1.5">
-                Verification Code
-              </Text>
-
-              <View className="flex-row justify-between">
-                {[0, 1, 2, 3, 4, 5].map((index) => (
-                  <TextInput
-                    key={index}
-                    ref={(ref) => {
-                      codeInputRefs.current[index] = ref;
-                    }}
-                    className={`w-12 h-14 border text-center rounded-lg text-lg font-semibold ${
-                      errors.code && codeDigits.join("").length < 6
-                        ? "border-red-500 bg-red-50"
-                        : focusedField === `code-${index}`
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300"
-                    }`}
-                    maxLength={index === 0 ? 6 : 1}
-                    keyboardType="number-pad"
-                    value={codeDigits[index]}
-                    onChangeText={(text) => handleCodeChange(text, index)}
-                    onKeyPress={(e) => handleKeyPress(e, index)}
-                    onFocus={() => setFocusedField(`code-${index}`)}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                ))}
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${
+                        errors.email
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === "email"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                      style={{
+                        fontSize,
+                        minHeight: 56,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                      placeholder="Enter your email address"
+                      onBlur={() => {
+                        setFocusedField(null);
+                        onBlur();
+                      }}
+                      onFocus={() => setFocusedField("email")}
+                      onChangeText={onChange}
+                      value={value}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      placeholderTextColor="#9CA3AF"
+                      accessibilityLabel="Email address input"
+                      accessibilityHint="Enter the email address where you received the verification code"
+                    />
+                  )}
+                />
+                {errors.email && (
+                  <Text className="text-red-600 text-sm mt-2 ml-1 font-medium">
+                    {errors.email.message}
+                  </Text>
+                )}
               </View>
 
-              {errors.code && (
-                <Text className="text-red-500 text-sm mt-2 ml-1 text-center">
-                  {errors.code.message}
+              {/* Verification Code Field */}
+              <View>
+                <Text className="text-base font-semibold text-gray-800 mb-3">
+                  Verification Code
                 </Text>
-              )}
-            </View>
 
-            {/* Verify Button */}
-            <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              className="bg-blue-500 py-4 rounded-xl items-center mt-6 shadow-sm shadow-blue-400"
-              activeOpacity={0.8}
-            >
-              <Text className="text-white font-bold text-xl">Verify Email</Text>
-            </TouchableOpacity>
+                <View className="flex-row justify-between">
+                  {[0, 1, 2, 3, 4, 5].map((index) => (
+                    <TextInput
+                      key={index}
+                      ref={(ref) => {
+                        codeInputRefs.current[index] = ref;
+                      }}
+                      className={`w-14 h-16 border-2 text-center rounded-xl text-xl font-bold ${
+                        errors.code && codeDigits.join("").length < 6
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === `code-${index}`
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                      style={{
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                      maxLength={index === 0 ? 6 : 1}
+                      keyboardType="number-pad"
+                      value={codeDigits[index]}
+                      onChangeText={(text) => handleCodeChange(text, index)}
+                      onKeyPress={(e) => handleKeyPress(e, index)}
+                      onFocus={() => setFocusedField(`code-${index}`)}
+                      onBlur={() => setFocusedField(null)}
+                      accessibilityLabel={`Verification code digit ${index + 1}`}
+                      accessibilityHint={`Enter the ${index + 1} digit of your verification code`}
+                    />
+                  ))}
+                </View>
 
-            {/* Resend Code */}
-            <View className="items-center mt-4">
-              <Text className="text-gray-600 mb-2">
-                Didn&apos;t receive the code?
-              </Text>
-              <TouchableOpacity>
-                <Text className="text-blue-600 font-semibold">Resend Code</Text>
-              </TouchableOpacity>
-            </View>
+                {errors.code && (
+                  <Text className="text-red-600 text-sm mt-3 ml-1 text-center font-medium">
+                    {errors.code.message}
+                  </Text>
+                )}
+              </View>
 
-            {/* Back to Sign In */}
-            <View className="flex-row justify-center mt-6">
+              {/* Verify Button */}
               <TouchableOpacity
-                onPress={() => router.push("/(auth)/sign-in")}
-                className="flex-row items-center"
+                onPress={handleSubmit(onSubmit)}
+                className="bg-blue-600 py-4 rounded-xl items-center mt-4"
+                style={{
+                  minHeight: 56,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Verify email address"
+                accessibilityHint="Submit the verification code to verify your email"
               >
-                <Text className="text-blue-600 font-semibold">
-                  ← Back to Sign In
-                </Text>
+                <Text className="text-white font-bold text-lg">Verify Email</Text>
               </TouchableOpacity>
+
+              {/* Resend Code */}
+              <View className="items-center mt-6">
+                <Text className="text-gray-600 mb-3 text-base">
+                  Didn&apos;t receive the code?
+                </Text>
+                <TouchableOpacity
+                  style={{ minHeight: 44 }}
+                  className="py-2"
+                  accessibilityRole="button"
+                  accessibilityLabel="Resend verification code"
+                  accessibilityHint="Request a new verification code to be sent to your email"
+                >
+                  <Text className="text-blue-600 font-semibold text-base">Resend Code</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          </View>
+
+          {/* Footer */}
+          <View className="flex-row justify-center mt-8">
+            <TouchableOpacity
+              onPress={() => router.push("/(auth)/sign-in")}
+              className="flex-row items-center py-2"
+              style={{ minHeight: 44 }}
+              accessibilityRole="button"
+              accessibilityLabel="Go back to sign in"
+            >
+              <Text className="text-blue-600 font-semibold text-base">
+                ← Back to Sign In
+              </Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

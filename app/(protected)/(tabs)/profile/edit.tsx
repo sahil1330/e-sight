@@ -1,20 +1,19 @@
 import ProfileAvatar from "@/components/Profile/ProfileAvatar";
-import ProfileSection from "@/components/Profile/ProfileSection";
 import { useAuth } from "@/context/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
@@ -82,13 +81,29 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView className="flex-1 px-4" contentContainerClassName="py-4">
-          <ProfileSection title="Edit Profile Information">
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 120, // Extra space for tab bar
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View className="mb-6">
+            <Text className="text-2xl font-bold text-gray-900 mb-2">Edit Profile</Text>
+            <Text className="text-gray-600 text-base">Update your personal information</Text>
+          </View>
+
+          {/* Profile Card */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <ProfileAvatar
               name={user?.fullName}
               role={user?.role}
@@ -96,10 +111,10 @@ export default function EditProfileScreen() {
               onPressEdit={() => Alert.alert("Change Photo", "This functionality will be available soon.")}
             />
 
-            <View className="space-y-4 mt-6">
+            <View className="space-y-6 mt-6">
               {/* Full Name Field */}
               <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                <Text className="text-base font-semibold text-gray-800 mb-3">
                   Full Name
                 </Text>
                 <Controller
@@ -107,13 +122,21 @@ export default function EditProfileScreen() {
                   name="fullName"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border rounded-xl px-4 py-3 ${
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${
                         errors.fullName
                           ? "border-red-500 bg-red-50"
                           : focusedField === "fullName"
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300"
+                          : "border-gray-200 bg-white"
                       }`}
+                      style={{
+                        minHeight: 56,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
                       placeholder="Enter your full name"
                       onFocus={() => setFocusedField("fullName")}
                       onBlur={() => {
@@ -122,11 +145,15 @@ export default function EditProfileScreen() {
                       }}
                       onChangeText={onChange}
                       value={value}
+                      autoComplete="name"
+                      placeholderTextColor="#9CA3AF"
+                      accessibilityLabel="Full name input"
+                      accessibilityHint="Enter your complete name"
                     />
                   )}
                 />
                 {errors.fullName && (
-                  <Text className="text-red-500 text-xs ml-1 mt-1">
+                  <Text className="text-red-600 text-sm ml-1 mt-2 font-medium">
                     {errors.fullName.message}
                   </Text>
                 )}
@@ -134,7 +161,7 @@ export default function EditProfileScreen() {
 
               {/* Email Field */}
               <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                <Text className="text-base font-semibold text-gray-800 mb-3">
                   Email Address
                 </Text>
                 <Controller
@@ -142,14 +169,22 @@ export default function EditProfileScreen() {
                   name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border rounded-xl px-4 py-3 ${
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${
                         errors.email
                           ? "border-red-500 bg-red-50"
                           : focusedField === "email"
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300"
+                          : "border-gray-200 bg-white"
                       }`}
-                      placeholder="Enter your email"
+                      style={{
+                        minHeight: 56,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                      placeholder="Enter your email address"
                       onFocus={() => setFocusedField("email")}
                       onBlur={() => {
                         setFocusedField(null);
@@ -159,11 +194,15 @@ export default function EditProfileScreen() {
                       value={value}
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      autoComplete="email"
+                      placeholderTextColor="#9CA3AF"
+                      accessibilityLabel="Email address input"
+                      accessibilityHint="Enter your email address"
                     />
                   )}
                 />
                 {errors.email && (
-                  <Text className="text-red-500 text-xs ml-1 mt-1">
+                  <Text className="text-red-600 text-sm ml-1 mt-2 font-medium">
                     {errors.email.message}
                   </Text>
                 )}
@@ -171,7 +210,7 @@ export default function EditProfileScreen() {
 
               {/* Phone Field */}
               <View>
-                <Text className="text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                <Text className="text-base font-semibold text-gray-800 mb-3">
                   Phone Number
                 </Text>
                 <Controller
@@ -179,13 +218,21 @@ export default function EditProfileScreen() {
                   name="phone"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border rounded-xl px-4 py-3 ${
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${
                         errors.phone
                           ? "border-red-500 bg-red-50"
                           : focusedField === "phone"
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300"
+                          : "border-gray-200 bg-white"
                       }`}
+                      style={{
+                        minHeight: 56,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
                       placeholder="Enter your phone number"
                       onFocus={() => setFocusedField("phone")}
                       onBlur={() => {
@@ -195,43 +242,73 @@ export default function EditProfileScreen() {
                       onChangeText={onChange}
                       value={value}
                       keyboardType="phone-pad"
+                      autoComplete="tel"
+                      placeholderTextColor="#9CA3AF"
+                      accessibilityLabel="Phone number input"
+                      accessibilityHint="Enter your phone number"
                     />
                   )}
                 />
                 {errors.phone && (
-                  <Text className="text-red-500 text-xs ml-1 mt-1">
+                  <Text className="text-red-600 text-sm ml-1 mt-2 font-medium">
                     {errors.phone.message}
                   </Text>
                 )}
               </View>
 
               {/* Buttons */}
-              <View className="flex-row space-x-3 mt-2">
+              <View className="flex-row space-x-4 mt-8">
                 <TouchableOpacity
                   onPress={() => router.back()}
-                  className="flex-1 border border-gray-300 rounded-xl py-3.5 items-center"
+                  className="flex-1 border-2 border-gray-300 rounded-xl py-4 items-center"
+                  style={{
+                    minHeight: 56,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel editing"
+                  accessibilityHint="Discard changes and go back"
                 >
-                  <Text className="text-gray-600 font-medium">Cancel</Text>
+                  <Text className="text-gray-700 font-semibold text-base">Cancel</Text>
                 </TouchableOpacity>
-                
+
                 <TouchableOpacity
                   onPress={handleSubmit(onSaveProfile)}
                   disabled={loading}
-                  className={`flex-1 rounded-xl py-3.5 items-center ${
-                    loading ? "bg-blue-400" : "bg-blue-500"
+                  className={`flex-1 rounded-xl py-4 items-center ${
+                    loading ? "bg-blue-400" : "bg-blue-600"
                   }`}
+                  style={{
+                    minHeight: 56,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Save profile changes"
+                  accessibilityHint="Save the updated profile information"
+                  accessibilityState={{ disabled: loading }}
                 >
                   {loading ? (
-                    <ActivityIndicator size="small" color="white" />
+                    <View className="flex-row items-center">
+                      <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+                      <Text className="text-white font-semibold text-base">Saving...</Text>
+                    </View>
                   ) : (
-                    <Text className="text-white font-bold">
+                    <Text className="text-white font-semibold text-base">
                       Save Changes
                     </Text>
                   )}
                 </TouchableOpacity>
               </View>
             </View>
-          </ProfileSection>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

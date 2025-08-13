@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import * as TaskManager from "expo-task-manager";
 import { io, Socket } from "socket.io-client";
 import { LAST_LOCATION_TOKEN, LOCATION_TASK_NAME, PENDING_LOCATION_TOKEN } from "./constants";
+import { addLocationNotification } from "./notificationHelpers";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -82,43 +83,7 @@ class LocationService {
         }
     }
 
-    async createNotification() {
-        try {
-            const notificationId = await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: "Location tracking active",
-                    body: "Initializing location tracking...",
-                    sticky: true,
-                    priority: Notifications.AndroidNotificationPriority.HIGH,
-                    vibrate: [500, 1000, 500],
-                },
-                trigger: null, // Trigger immediately
-            });
-
-            this.notificationId = notificationId;
-            return notificationId;
-        } catch (error) {
-            console.error("Error creating notification:", error);
-        }
-    }
-
-    // Update notification content
-    async updateNotification(message: string) {
-        try {
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title: "Location tracking active",
-                    body: message,
-                    sticky: true,
-                    priority: Notifications.AndroidNotificationPriority.HIGH,
-                    vibrate: [500, 1000, 500],
-                },
-                trigger: null, // Trigger immediately
-            });
-        } catch (error) {
-            console.error("Error updating notification:", error);
-        }
-    }
+    // Note: Device notifications removed - using secure storage notification system instead
 
     // Start the background location service
     async startBackgroundService() {
@@ -130,7 +95,7 @@ class LocationService {
 
             await this.initializeSocket();
 
-            await this.createNotification();
+            // Note: Device notifications removed - using secure storage notification system instead
 
             // Store a heartbeat timestamp to help monitor the service
             await SecureStore.setItemAsync("locationLastHeartbeat", Date.now().toString());
@@ -341,18 +306,16 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                     await SecureStore.setItemAsync(PENDING_LOCATION_TOKEN, JSON.stringify(locationData));
                 }
 
-                // Update notification (non-blocking)
-                Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: "Location tracking active",
-                        body: `Location sent at ${new Date().toLocaleTimeString()}`,
-                        sticky: true,
-                        priority: Notifications.AndroidNotificationPriority.LOW,
-                    },
-                    trigger: null,
-                }).catch((notifError) => {
-                    console.log("Notification error:", notifError);
-                });
+                // Store location update in notifications system (non-blocking)
+                try {
+                    await addLocationNotification(
+                        location.coords.latitude,
+                        location.coords.longitude
+                    );
+                    console.log("Location notification stored:", new Date().toLocaleTimeString());
+                } catch (notifError) {
+                    console.log("Location notification storage error:", notifError);
+                }
 
                 return { success: true };
             }

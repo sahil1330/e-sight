@@ -67,148 +67,217 @@ const SignIn = () => {
   const headerFontSize = isSmallDevice ? 24 : 28;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-gray-50" edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
-          className="flex-1 px-6 space-y-6"
-          contentInsetAdjustmentBehavior="automatic"
-          contentContainerClassName="py-16"
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingTop: 40,
+            paddingBottom: 40,
+            minHeight: '100%',
+          }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <View className="items-center mb-8">
+          {/* Header Section */}
+          <View className="items-center mb-10">
+            <View className="bg-blue-600 w-20 h-20 rounded-full items-center justify-center mb-6">
+              <Text className="text-white text-2xl font-bold">E</Text>
+            </View>
             <Text
               style={{ fontSize: headerFontSize }}
-              className="font-bold text-black"
+              className="font-bold text-gray-900 mb-2"
             >
               Welcome Back
             </Text>
-            <Text className="text-gray-500 mt-2 text-center">
-              Please sign in to your account
+            <Text className="text-gray-600 text-center text-lg">
+              Sign in to access your E-Sight account
             </Text>
           </View>
 
-          <View className="space-y-5">
-            {/* Email/Phone Field */}
-            <View>
-              <Text className="text-sm font-medium text-gray-700 ml-1 mb-1.5">
-                Email or Phone
-              </Text>
-              <Controller
-                control={control}
-                name="identifier"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`border rounded-xl px-4 py-3.5 ${
-                      errors.identifier
-                        ? "border-red-500 bg-red-50"
-                        : focusedField === "identifier"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300"
-                    }`}
-                    style={{ fontSize }}
-                    placeholder="Enter your email or phone"
-                    onBlur={() => {
-                      setFocusedField(null);
-                      onBlur();
-                    }}
-                    onFocus={() => setFocusedField("identifier")}
-                    onChangeText={onChange}
-                    value={value}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholderTextColor="#9ca3af"
-                  />
-                )}
-              />
-              {errors.identifier && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.identifier.message}
+          {/* Form Container */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <View className="space-y-6">
+              {/* Email/Phone Field */}
+              <View>
+                <Text className="text-base font-semibold text-gray-800 mb-3">
+                  Email or Phone
                 </Text>
-              )}
-            </View>
-
-            {/* Password Field */}
-            <View className="mt-4">
-              <Text className="text-sm font-medium text-gray-700 ml-1 mb-1.5">
-                Password
-              </Text>
-              <View className="relative">
                 <Controller
                   control={control}
-                  name="password"
-                  rules={{
-                    required: "Password is required",
-                  }}
+                  name="identifier"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border rounded-xl px-4 py-3.5  text-black ${
-                        errors.password
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${
+                        errors.identifier
                           ? "border-red-500 bg-red-50"
-                          : focusedField === "password"
+                          : focusedField === "identifier"
                           ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300"
+                          : "border-gray-200 bg-white"
                       }`}
-                      style={{ fontSize }}
-                      placeholder="Enter your password"
+                      style={{
+                        fontSize,
+                        minHeight: 56, // Ensure 44px+ touch target
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.05,
+                        shadowRadius: 2,
+                        elevation: 1,
+                      }}
+                      placeholder="Enter your email or phone number"
                       onBlur={() => {
                         setFocusedField(null);
                         onBlur();
                       }}
-                      onFocus={() => setFocusedField("password")}
+                      onFocus={() => setFocusedField("identifier")}
                       onChangeText={onChange}
                       value={value}
-                      secureTextEntry={!passwordVisible}
-                      placeholderTextColor="#9ca3af"
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      placeholderTextColor="#9CA3AF"
+                      accessibilityLabel="Email or phone number input"
+                      accessibilityHint="Enter your email address or phone number to sign in"
                     />
                   )}
                 />
+                {errors.identifier && (
+                  <Text className="text-red-600 text-sm mt-2 ml-1 font-medium">
+                    {errors.identifier.message}
+                  </Text>
+                )}
+              </View>
+
+              {/* Password Field */}
+              <View>
+                <Text className="text-base font-semibold text-gray-800 mb-3">
+                  Password
+                </Text>
+                <View className="relative">
+                  <Controller
+                    control={control}
+                    name="password"
+                    rules={{
+                      required: "Password is required",
+                    }}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-base ${
+                          errors.password
+                            ? "border-red-500 bg-red-50"
+                            : focusedField === "password"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
+                        }`}
+                        style={{
+                          fontSize,
+                          minHeight: 56, // Ensure 44px+ touch target
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 1 },
+                          shadowOpacity: 0.05,
+                          shadowRadius: 2,
+                          elevation: 1,
+                        }}
+                        placeholder="Enter your password"
+                        onBlur={() => {
+                          setFocusedField(null);
+                          onBlur();
+                        }}
+                        onFocus={() => setFocusedField("password")}
+                        onChangeText={onChange}
+                        value={value}
+                        secureTextEntry={!passwordVisible}
+                        autoComplete="password"
+                        placeholderTextColor="#9CA3AF"
+                        accessibilityLabel="Password input"
+                        accessibilityHint="Enter your account password"
+                      />
+                    )}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setPasswordVisible(!passwordVisible)}
+                    className="absolute right-4 top-4 p-2"
+                    style={{ minHeight: 44, minWidth: 44 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={passwordVisible ? "Hide password" : "Show password"}
+                  >
+                    <Text className="text-blue-600 font-medium">
+                      {passwordVisible ? "Hide" : "Show"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {errors.password && (
+                  <Text className="text-red-600 text-sm mt-2 ml-1 font-medium">
+                    {errors.password.message}
+                  </Text>
+                )}
+              </View>
+
+              {/* Forgot Password */}
+              <View className="items-end mt-2">
                 <TouchableOpacity
-                  onPress={() => setPasswordVisible(!passwordVisible)}
-                  className="absolute right-4 top-3.5"
+                  style={{ minHeight: 44 }}
+                  className="py-2"
+                  accessibilityRole="button"
+                  accessibilityLabel="Forgot password"
+                  accessibilityHint="Navigate to password reset"
                 >
-                  <Text className="text-blue-600">
-                    {passwordVisible ? "Hide" : "Show"}
+                  <Text className="text-blue-600 font-semibold text-base">
+                    Forgot Password?
                   </Text>
                 </TouchableOpacity>
               </View>
-              {errors.password && (
-                <Text className="text-red-500 text-sm mt-1 ml-1">
-                  {errors.password.message}
-                </Text>
-              )}
-            </View>
 
-            {/* Forgot Password */}
-            <View className="items-end">
-              <TouchableOpacity>
-                <Text className="text-blue-600 font-medium">
-                  Forgot Password?
-                </Text>
+              {/* Sign In Button */}
+              <TouchableOpacity
+                onPress={handleSubmit(onSubmit)}
+                className={`py-4 rounded-xl items-center mt-4 ${
+                  isSubmitting ? 'bg-blue-400' : 'bg-blue-600'
+                }`}
+                style={{
+                  minHeight: 56,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
+                }}
+                activeOpacity={0.8}
+                disabled={isSubmitting}
+                accessibilityRole="button"
+                accessibilityLabel="Sign in to your account"
+                accessibilityState={{ disabled: isSubmitting }}
+              >
+                {isSubmitting ? (
+                  <View className="flex-row items-center">
+                    <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }} />
+                    <Text className="text-white font-bold text-lg">Signing In...</Text>
+                  </View>
+                ) : (
+                  <Text className="text-white font-bold text-lg">Sign In</Text>
+                )}
               </TouchableOpacity>
             </View>
+          </View>
 
-            {/* Sign In Button */}
+          {/* Footer */}
+          <View className="flex-row justify-center mt-8">
+            <Text className="text-gray-600 text-base">
+              Don&apos;t have an account?{" "}
+            </Text>
             <TouchableOpacity
-              onPress={handleSubmit(onSubmit)}
-              className="bg-blue-500 py-4 rounded-xl items-center mt-6 shadow-sm shadow-blue-400"
-              activeOpacity={0.8}
-              disabled={isSubmitting}
+              onPress={() => router.push("/(auth)/sign-up")}
+              style={{ minHeight: 44 }}
+              className="py-2"
+              accessibilityRole="button"
+              accessibilityLabel="Navigate to sign up"
             >
-              {isSubmitting ? (<Text className="text-white font-bold text-xl">Signing in <ActivityIndicator size={16} /></Text>) : (<Text className="text-white font-bold text-xl">Sign In</Text>)} 
+              <Text className="text-blue-600 font-semibold text-base">Sign Up</Text>
             </TouchableOpacity>
-
-            {/* Don't have an account */}
-            <View className="flex-row justify-center mt-5">
-              <Text className="text-gray-600">
-                Don&apos;t have an account?{" "}
-              </Text>
-              <TouchableOpacity onPress={() => router.push("/(auth)/sign-up")}>
-                <Text className="text-blue-600 font-semibold">Sign Up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,4 +1,6 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { SocketProvider } from "@/context/SocketProvider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -10,7 +12,6 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import "./global.css";
-import { SocketProvider } from "@/context/SocketProvider";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -25,15 +26,17 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <SocketProvider>
-          {/* <Stack>
-          <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack> */}
-          <AuthCheckProvider />
-          <StatusBar style="auto" />
-        </SocketProvider>
+        <NotificationProvider>
+          <SocketProvider>
+            {/* <Stack>
+            <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack> */}
+            <AuthCheckProvider />
+            <StatusBar style="auto" />
+          </SocketProvider>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

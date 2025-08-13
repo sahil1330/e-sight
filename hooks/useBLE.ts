@@ -1,5 +1,6 @@
 import { PREVIOUS_DEVICES } from "@/utils/constants";
 import { registeredDevices } from "@/utils/devices";
+import { addDeviceNotification } from "@/utils/notificationHelpers";
 import { Buffer } from "buffer";
 import * as ExpoDevice from "expo-device";
 import * as SecureStore from "expo-secure-store";
@@ -174,6 +175,14 @@ function useBLE(): BLEAPI {
                 await bleManager.cancelDeviceConnection(connectedDevice.id);
                 setConnectedDevice(null);
                 setCharacteristic(null);
+
+                // Add disconnection notification
+                await addDeviceNotification(
+                    connectedDevice.name || "Unknown Device",
+                    connectedDevice.id,
+                    'disconnected',
+                    'Disconnected to connect to new device'
+                );
             }
 
             // Stop scanning before connecting
@@ -182,12 +191,28 @@ function useBLE(): BLEAPI {
                 setIsScanning(false);
             }
 
+            // Add pairing started notification
+            await addDeviceNotification(
+                device.name || "Unknown Device",
+                device.id,
+                'pairing_started',
+                'Attempting to connect to device'
+            );
+
             const deviceConnection = await bleManager.connectToDevice(device.id)
             if (!deviceConnection) {
                 throw new Error("Failed to connect to device");
             }
 
             setConnectedDevice(deviceConnection);
+
+            // Add successful connection notification
+            await addDeviceNotification(
+                deviceConnection.name || "Unknown Device",
+                deviceConnection.id,
+                'connected',
+                'Successfully connected to device'
+            );
             const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
             const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
             if (!prevDevicesArray.some((prevDevice: Device) => prevDevice.id === deviceConnection.id)) {
@@ -220,9 +245,26 @@ function useBLE(): BLEAPI {
                 if (writeCharacteristic) {
                     startStreamingData(deviceConnection, writeCharacteristic);
                 }
+
+                // Add pairing completed notification
+                await addDeviceNotification(
+                    deviceConnection.name || "Unknown Device",
+                    deviceConnection.id,
+                    'pairing_completed',
+                    'Device pairing and setup completed successfully'
+                );
             }
         } catch (error) {
             console.error("Error connecting to device:", error);
+
+            // Add connection failed notification
+            await addDeviceNotification(
+                device.name || "Unknown Device",
+                device.id,
+                'connection_failed',
+                `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+
             setConnectedDevice(null);
             setCharacteristic(null);
             await bleManager.cancelDeviceConnection(device.id);
@@ -235,10 +277,30 @@ function useBLE(): BLEAPI {
                 // const result = await bleManager.cancelDeviceConnection(connectedDevice.id);
                 bleManager.cancelDeviceConnection(connectedDevice.id);
                 console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
+
+                // Add disconnection notification
+                await addDeviceNotification(
+                    connectedDevice.name || "Unknown Device",
+                    connectedDevice.id,
+                    'disconnected',
+                    'Device disconnected by user'
+                );
+
                 setConnectedDevice(null);
                 setCharacteristic(null);
             } catch (error) {
                 console.error("Error disconnecting from device:", error);
+
+                // Add disconnection failed notification (though we still clear the state)
+                await addDeviceNotification(
+                    connectedDevice.name || "Unknown Device",
+                    connectedDevice.id,
+                    'disconnected',
+                    `Disconnection error: ${error instanceof Error ? error.message : 'Unknown error'}`
+                );
+
+                setConnectedDevice(null);
+                setCharacteristic(null);
             }
         }
     };
