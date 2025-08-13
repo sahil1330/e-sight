@@ -135,7 +135,7 @@ export default function PasswordScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View className="relative">
                       <TextInput
-                        className={`border rounded-xl px-4 py-3 ${
+                        className={`border rounded-xl px-4 py-3 text-black ${
                           errors.currentPassword
                             ? "border-red-500 bg-red-50"
                             : focusedField === "currentPassword"
@@ -189,7 +189,7 @@ export default function PasswordScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View className="relative">
                       <TextInput
-                        className={`border rounded-xl px-4 py-3 ${
+                        className={`border rounded-xl px-4 py-3 text-black ${
                           errors.newPassword
                             ? "border-red-500 bg-red-50"
                             : focusedField === "newPassword"
@@ -239,7 +239,7 @@ export default function PasswordScreen() {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <View className="relative">
                       <TextInput
-                        className={`border rounded-xl px-4 py-3 ${
+                        className={`border rounded-xl px-4 py-3 text-black ${
                           errors.confirmPassword
                             ? "border-red-500 bg-red-50"
                             : focusedField === "confirmPassword"

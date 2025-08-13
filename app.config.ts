@@ -1,0 +1,124 @@
+import { ConfigContext, ExpoConfig } from 'expo/config';
+
+const IS_DEV = process.env.APP_VARIANT === 'development';
+const IS_PREVIEW = process.env.APP_VARIANT === 'preview';
+
+const getUniqueIdentifier = () => {
+    if (IS_DEV) {
+        return 'com.sahilmane26.esight.dev';
+    }
+
+    if (IS_PREVIEW) {
+        return 'com.sahilmane26.esight.preview';
+    }
+
+    return 'com.sahilmane26.esight';
+};
+
+const getAppName = () => {
+    if (IS_DEV) {
+        return 'e-Sight (Dev)';
+    }
+
+    if (IS_PREVIEW) {
+        return 'e-Sight (Preview)';
+    }
+
+    return 'e-Sight';
+};
+
+export default ({ config }: ConfigContext): ExpoConfig => ({
+    ...config,
+    name: getAppName(),
+    slug: 'e-sight',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: 'esight',
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    ios: {
+        ...config.ios,
+        bundleIdentifier: getUniqueIdentifier(),
+        supportsTablet: true,
+        infoPlist: {
+            NSLocationAlwaysAndWhenInUseUsageDescription: 'This app needs location access to send your current location to the server in the background.',
+            NSLocationWhenInUseUsageDescription: 'This app needs location access to send your current location to the server.',
+            UIBackgroundModes: ['location', 'background-fetch']
+        }
+    },
+    android: {
+        ...config.android,
+        package: getUniqueIdentifier(),
+        config: {
+            googleMaps: {
+                apiKey: process.env.GOOGLE_MAPS_API_KEY || ''
+            }
+        },
+        adaptiveIcon: {
+            foregroundImage: './assets/images/adaptive-icon.png',
+            backgroundColor: '#ffffff'
+        },
+        edgeToEdgeEnabled: true,
+        permissions: [
+            'android.permission.BLUETOOTH',
+            'android.permission.BLUETOOTH_ADMIN',
+            'android.permission.BLUETOOTH_CONNECT'
+        ]
+    },
+    web: {
+        bundler: 'metro',
+        output: 'static',
+        favicon: './assets/images/favicon.png'
+    },
+    plugins: [
+        'expo-router',
+        [
+            'expo-splash-screen',
+            {
+                image: './assets/images/splash-icon.png',
+                imageWidth: 200,
+                resizeMode: 'contain',
+                backgroundColor: '#ffffff'
+            }
+        ],
+        [
+            'expo-camera',
+            {
+                cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera',
+                microphonePermission: 'Allow $(PRODUCT_NAME) to access your microphone',
+                recordAudioAndroid: true
+            }
+        ],
+        'expo-secure-store',
+        'react-native-ble-plx',
+        [
+            'expo-location',
+            {
+                locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
+                locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
+                locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
+                isIosBackgroundLocationEnabled: true,
+                isAndroidBackgroundLocationEnabled: true,
+                isAndroidForegroundServiceEnabled: true
+            }
+        ],
+        [
+            'expo-notifications',
+            {
+                icon: './assets/images/icon.png',
+                color: '#000000',
+                sounds: []
+            }
+        ]
+    ],
+    experiments: {
+        typedRoutes: true
+    },
+    extra: {
+        router: {},
+        eas: {
+            projectId: process.env.EAS_PROJECT_ID || "184fa7f8-1896-4164-8a5b-037db4f7e1fa"
+        }
+    }
+});

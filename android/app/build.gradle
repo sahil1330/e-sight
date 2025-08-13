@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.sahilmane26.esight'
+    namespace 'com.sahilmane26.esight.dev'
     defaultConfig {
-        applicationId 'com.sahilmane26.esight'
+        applicationId 'com.sahilmane26.esight.dev'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

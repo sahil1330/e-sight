@@ -46,7 +46,7 @@ const SignIn = () => {
       if (login) {
         const result = await login(data?.identifier, data?.password);
         if (result.isError) {
-          Alert.alert("Error", result.message);
+          Alert.alert("Error", result.message || "An error occurred.");
         }
         if (result.success) {
           Alert.alert("Success", "You have successfully signed in!");
