@@ -275,7 +275,7 @@ function useBLE(): BLEAPI {
         if (connectedDevice) {
             try {
                 // const result = await bleManager.cancelDeviceConnection(connectedDevice.id);
-                bleManager.cancelDeviceConnection(connectedDevice.id);
+                await bleManager.cancelDeviceConnection(connectedDevice.id);
                 console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
 
                 // Add disconnection notification

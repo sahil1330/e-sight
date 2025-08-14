@@ -131,13 +131,21 @@ const ConnectToDevice = () => {
         </View>
       </View>
       <TouchableOpacity
-        className="bg-blue-600 px-4 py-2 rounded-lg"
+        className="bg-blue-600 px-4 py-3 rounded-xl"
+        style={{
+          minHeight: 44,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+        }}
         onPress={() => handleConnectToDevice(item)}
         disabled={isConnecting}
         accessibilityRole="button"
         accessibilityLabel={`Connect to ${item.name || "Unknown Device"}`}
       >
-        <Text className="text-white font-medium">
+        <Text className="text-white font-semibold text-base">
           {(item.id === connectedDevice?.id && isConnecting) ? "Connecting..." : "Connect"}
         </Text>
       </TouchableOpacity>
@@ -296,12 +304,20 @@ const ConnectToDevice = () => {
                   Make sure your device is discoverable
                 </Text>
                 <TouchableOpacity
-                  className="bg-blue-600 px-6 py-3 rounded-xl mt-6"
+                  className="bg-blue-600 px-6 py-4 rounded-xl mt-6"
+                  style={{
+                    minHeight: 56,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
                   onPress={scanForPeripherals}
                   accessibilityRole="button"
                   accessibilityLabel="Scan again for devices"
                 >
-                  <Text className="text-white font-medium text-base">Scan Again</Text>
+                  <Text className="text-white font-semibold text-base">Scan Again</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -317,30 +333,54 @@ const ConnectToDevice = () => {
             <View className="flex-row justify-between mt-6 space-x-3">
               <TouchableOpacity
                 className="bg-gray-200 px-6 py-4 rounded-xl flex-1"
+                style={{
+                  minHeight: 56,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }}
                 onPress={closeModal}
                 accessibilityRole="button"
                 accessibilityLabel="Cancel device selection"
               >
-                <Text className="text-gray-700 font-medium text-center text-base">Cancel</Text>
+                <Text className="text-gray-700 font-semibold text-center text-base">Cancel</Text>
               </TouchableOpacity>
 
               {isScanning ? (
                 <TouchableOpacity
                   className="bg-red-600 px-6 py-4 rounded-xl flex-1 ml-3"
+                  style={{
+                    minHeight: 56,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
                   onPress={stopScan}
                   accessibilityRole="button"
                   accessibilityLabel="Stop scanning for devices"
                 >
-                  <Text className="text-white font-medium text-center text-base">Stop Scan</Text>
+                  <Text className="text-white font-semibold text-center text-base">Stop Scan</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   className="bg-blue-600 px-6 py-4 rounded-xl flex-1 ml-3"
+                  style={{
+                    minHeight: 56,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.1,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  }}
                   onPress={scanForPeripherals}
                   accessibilityRole="button"
                   accessibilityLabel="Start scanning for devices"
                 >
-                  <Text className="text-white font-medium text-center text-base">Scan</Text>
+                  <Text className="text-white font-semibold text-center text-base">Scan</Text>
                 </TouchableOpacity>
               )}
             </View>

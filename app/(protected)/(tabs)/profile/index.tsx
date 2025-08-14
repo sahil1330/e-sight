@@ -4,12 +4,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -125,14 +125,14 @@ export default function ProfileScreen() {
 
               <TouchableOpacity
                 onPress={() => router.push("/profile/edit")}
-                className="flex-row items-center justify-center mt-6 py-4 border-2 border-blue-600 rounded-xl"
+                className="flex-row items-center justify-center mt-6 py-4 px-6 border border-blue-600 rounded-xl bg-blue-50"
                 style={{
                   minHeight: 56,
                   shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Edit profile information"

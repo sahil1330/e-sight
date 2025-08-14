@@ -5,15 +5,15 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
@@ -260,7 +260,7 @@ export default function EditProfileScreen() {
               <View className="flex-row space-x-4 mt-8">
                 <TouchableOpacity
                   onPress={() => router.back()}
-                  className="flex-1 border-2 border-gray-300 rounded-xl py-4 items-center"
+                  className="flex-1 border border-gray-300 rounded-xl py-4 px-4 items-center bg-gray-50"
                   style={{
                     minHeight: 56,
                     shadowColor: '#000',
