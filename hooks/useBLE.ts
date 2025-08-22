@@ -21,6 +21,7 @@ interface BLEAPI {
     startStreamingData(device: Device, writeCharacteristic: Characteristic | null): Promise<void>;
     onMessageUpdate(error: BleError | null, characteristic: Characteristic | null): Promise<number>;
     stopScan(): void; // Add stop scan method
+    forgetDevice(): void
 }
 
 function useBLE(): BLEAPI {
@@ -101,8 +102,8 @@ function useBLE(): BLEAPI {
         return devices.findIndex(device => nextDevice.id === device.id) >= 0;
     };
 
-    const stopScan = () => {
-        bleManager.stopDeviceScan();
+    const stopScan = async () => {
+        await bleManager.stopDeviceScan();
         setIsScanning(false);
     };
 
@@ -344,6 +345,34 @@ function useBLE(): BLEAPI {
         }
     }, [onMessageUpdate]);
 
+    const forgetDevice = async () => {
+        try {
+            const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
+            const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
+            console.log("Previous Devices Array: ", prevDevicesArray)
+            if (connectedDevice) {
+                const updatedDevicesArray = prevDevicesArray.filter((device: Device) => device.id !== connectedDevice.id);
+                console.log("Updated Devices Array: ", updatedDevicesArray)
+                console.log("Setting the devices array in store")
+                const isStoredPromise = await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(updatedDevicesArray))
+                console.log("isStoredPromise ", isStoredPromise)
+                // Add forget device notification
+                await addDeviceNotification(
+                    connectedDevice.name || "Unknown Device",
+                    connectedDevice.id,
+                    'forgot_device',
+                    'Device is forgotted by user'
+                );
+            }
+        } catch (error) {
+            console.error("Error forgetting device: " + error)
+            throw error
+        }
+        finally {
+            await disconnectFromDevice()
+        }
+    }
+
     return {
         startStreamingData,
         requestPermissions,
@@ -357,7 +386,8 @@ function useBLE(): BLEAPI {
         isScanning,
         characteristic,
         onMessageUpdate,
-        stopScan
+        stopScan,
+        forgetDevice
     };
 }
 

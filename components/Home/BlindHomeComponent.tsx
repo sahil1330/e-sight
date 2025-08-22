@@ -168,6 +168,17 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
     setRefreshing(false);
   }, [refreshUserState]);
 
+  /**
+   * Handles the user pressing the emergency button.
+   * Displays a confirmation alert asking if the user wants to notify caretakers.
+   * 
+   * If the user confirms:
+   * 1. Retrieves the last saved location from SecureStore
+   * 2. Sends an SOS notification to the user's caretakers with their location
+   * 
+   * @throws {Error} Displays an alert if the SOS notification fails to send
+   * @returns {void}
+   */
   const handleEmergencyPress = () => {
     Alert.alert(
       "Emergency Assistance",

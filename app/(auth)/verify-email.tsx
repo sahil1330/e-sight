@@ -1,9 +1,8 @@
 import { useAuth } from "@/context/AuthContext";
-import { verifyEmailSchema } from "@/schema/verifyEmailSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -18,19 +17,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
 
-type VerifyEmailFormData = z.infer<typeof verifyEmailSchema>;
+// Create a new schema that only requires the verification code
+const verifyCodeSchema = z.object({
+  code: z.string().min(6, "Verification code must be exactly 6 characters").max(6, "Verification code must be exactly 6 characters").regex(/^\d{6}$/, "Verification code must be a valid 6-digit number"),
+});
+
+type VerifyCodeFormData = z.infer<typeof verifyCodeSchema>;
 
 const VerifyEmail = () => {
+  const params = useLocalSearchParams();
+  const email = params.email as string;
+  
   const {
-    control,
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
-  } = useForm<VerifyEmailFormData>({
-    resolver: zodResolver(verifyEmailSchema),
+  } = useForm<VerifyCodeFormData>({
+    resolver: zodResolver(verifyCodeSchema),
     defaultValues: {
-      email: "",
       code: "",
     },
   });
@@ -39,20 +43,20 @@ const VerifyEmail = () => {
   const { width } = useWindowDimensions();
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const isSmallDevice = width < 380;
-  const fontSize = isSmallDevice ? 14 : 16;
   const headerFontSize = isSmallDevice ? 24 : 28;
 
   // For handling the verification code input
   const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
   const codeInputRefs = useRef<(TextInput | null)[]>([]);
   const { verifyEmail } = useAuth();
-  const onSubmit = async (data: VerifyEmailFormData) => {
-    if (verifyEmail) {
-      await verifyEmail(data.email, data.code);
+  
+  const onSubmit = async (data: VerifyCodeFormData) => {
+    if (verifyEmail && email) {
+      await verifyEmail(email, data.code);
     }
     Alert.alert(
       "Email Verification",
-      "Verification successful!" + JSON.stringify(data, null, 2)
+      "Verification successful!"
     );
     // Handle verification logic here
   };
@@ -122,79 +126,33 @@ const VerifyEmail = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Header Section */}
-          <View className="items-center mb-10">
-            <View className="w-20 h-20 rounded-full bg-green-100 items-center justify-center mb-6">
-              <Text className="text-green-600 text-3xl font-bold">✓</Text>
+          <View className="items-center mb-8">
+            <View className="w-24 h-24 rounded-full bg-indigo-100 items-center justify-center mb-6 border-4 border-indigo-200">
+              <Text className="text-indigo-600 text-4xl">📧</Text>
             </View>
             <Text
               style={{ fontSize: headerFontSize }}
-              className="font-bold text-gray-900 text-center mb-2"
+              className="font-bold text-gray-900 text-center mb-3"
             >
-              Verify Your Email
+              Check Your Email
             </Text>
-            <Text className="text-gray-600 text-center text-lg">
-              We've sent a 6-digit verification code to your email address
+            <Text className="text-gray-600 text-center text-base mb-2">
+              We&apos;ve sent a 6-digit verification code to:
             </Text>
+            <View className="bg-indigo-50 px-4 py-3 rounded-lg border border-indigo-200">
+              <Text className="text-indigo-700 text-center text-lg font-semibold">
+                {email || "your email address"}
+              </Text>
+            </View>
           </View>
 
           {/* Form Container */}
-          <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <View className="space-y-6">
-              {/* Email Field */}
-              <View>
-                <Text className="text-base font-semibold text-gray-800 mb-3">
-                  Email Address
-                </Text>
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.email
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "email"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white"
-                      }`}
-                      style={{
-                        fontSize,
-                        minHeight: 56,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.05,
-                        shadowRadius: 2,
-                        elevation: 1,
-                      }}
-                      placeholder="Enter your email address"
-                      onBlur={() => {
-                        setFocusedField(null);
-                        onBlur();
-                      }}
-                      onFocus={() => setFocusedField("email")}
-                      onChangeText={onChange}
-                      value={value}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                      placeholderTextColor="#9CA3AF"
-                      accessibilityLabel="Email address input"
-                      accessibilityHint="Enter the email address where you received the verification code"
-                    />
-                  )}
-                />
-                {errors.email && (
-                  <Text className="text-red-600 text-sm mt-2 ml-1 font-medium">
-                    {errors.email.message}
-                  </Text>
-                )}
-              </View>
-
-              {/* Verification Code Field */}
-              <View>
-                <Text className="text-base font-semibold text-gray-800 mb-3">
-                  Verification Code
-                </Text>
+          <View className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
+            {/* Verification Code Field */}
+            <View>
+              <Text className="text-lg font-bold text-gray-800 mb-4 text-center">
+                Enter Verification Code
+              </Text>
 
                 <View className="flex-row justify-between">
                   {[0, 1, 2, 3, 4, 5].map((index) => (
@@ -235,7 +193,6 @@ const VerifyEmail = () => {
                     {errors.code.message}
                   </Text>
                 )}
-              </View>
 
               {/* Verify Button */}
               <TouchableOpacity

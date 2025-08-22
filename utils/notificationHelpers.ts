@@ -79,7 +79,7 @@ export const addEmergencyNotification = async (
   // Provide haptic feedback for emergency alerts
   if (priority === 'critical' || priority === 'high') {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    
+
     // Schedule a local notification for critical alerts
     if (priority === 'critical') {
       await Notifications.scheduleNotificationAsync({
@@ -257,6 +257,8 @@ export const getDeviceStatusColor = (status: DeviceNotification['status']): stri
       return '#D97706'; // amber-600
     case 'pairing_completed':
       return '#059669'; // emerald-600
+    case 'forgot_device':
+      return '#DC2626'; // red-600
     default:
       return '#6B7280'; // gray-500
   }

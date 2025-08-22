@@ -43,9 +43,11 @@ const SignUp = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
   const onSubmit = async (data: SignUpFormData) => {
     try {
+      setIsSubmitting(true);
       if (!register) {
         Alert.alert("Error", "Some error occurred.");
         return;
@@ -64,16 +66,22 @@ const SignUp = () => {
       }
 
       if (result) {
-        router.push("/(auth)/verify-email");
+        router.push({
+          pathname: "/(auth)/verify-email",
+          params: { email: data.email }
+        });
       }
     } catch (error) {
       console.error("Error during sign-up:", error);
       Alert.alert("Sign Up Error", "An error occurred during sign-up.");
       return;
     }
+    finally {
+      setIsSubmitting(false);
+    }
     Alert.alert(
       "Sign Up",
-      "Sign up successful!" + JSON.stringify(data, null, 2)
+      "Sign up successful!"
     );
     // Handle sign-up logic here
   };
@@ -128,13 +136,12 @@ const SignUp = () => {
                   name="fullName"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.fullName
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.fullName
                           ? "border-red-500 bg-red-50"
                           : focusedField === "fullName"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white"
-                      }`}
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
+                        }`}
                       style={{
                         fontSize,
                         minHeight: 56,
@@ -176,13 +183,12 @@ const SignUp = () => {
                   name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.email
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.email
                           ? "border-red-500 bg-red-50"
                           : focusedField === "email"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white"
-                      }`}
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
+                        }`}
                       style={{
                         fontSize,
                         minHeight: 56,
@@ -226,13 +232,12 @@ const SignUp = () => {
                   name="phone"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.phone
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.phone
                           ? "border-red-500 bg-red-50"
                           : focusedField === "phone"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white"
-                      }`}
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
+                        }`}
                       style={{
                         fontSize,
                         minHeight: 56,
@@ -276,13 +281,12 @@ const SignUp = () => {
                     name="password"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
-                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-base ${
-                          errors.password
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 ${errors.password
                             ? "border-red-500 bg-red-50"
                             : focusedField === "password"
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white"
-                        }`}
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white"
+                          }`}
                         style={{
                           fontSize,
                           minHeight: 56,
@@ -338,13 +342,12 @@ const SignUp = () => {
                     name="confirmPassword"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
-                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-base ${
-                          errors.confirmPassword
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 ${errors.confirmPassword
                             ? "border-red-500 bg-red-50"
                             : focusedField === "confirmPassword"
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white"
-                        }`}
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 bg-white"
+                          }`}
                         style={{
                           fontSize,
                           minHeight: 56,
@@ -401,11 +404,10 @@ const SignUp = () => {
                     <View className="space-y-3">
                       <TouchableOpacity
                         onPress={() => onChange("blind")}
-                        className={`border-2 rounded-xl p-4 ${
-                          value === "blind"
+                        className={`border-2 rounded-xl p-4 ${value === "blind"
                             ? "bg-blue-50 border-blue-500"
                             : "bg-white border-gray-200"
-                        }`}
+                          }`}
                         style={{
                           minHeight: 64,
                           shadowColor: '#000',
@@ -421,11 +423,10 @@ const SignUp = () => {
                       >
                         <View className="flex-row items-center">
                           <View
-                            className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${
-                              value === "blind"
+                            className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${value === "blind"
                                 ? "border-blue-500"
                                 : "border-gray-400"
-                            }`}
+                              }`}
                           >
                             {value === "blind" && (
                               <View className="h-3 w-3 rounded-full bg-blue-500" />
@@ -433,11 +434,10 @@ const SignUp = () => {
                           </View>
                           <View className="flex-1">
                             <Text
-                              className={`font-semibold text-lg ${
-                                value === "blind"
+                              className={`font-semibold text-lg ${value === "blind"
                                   ? "text-blue-600"
                                   : "text-gray-800"
-                              }`}
+                                }`}
                             >
                               Blind User
                             </Text>
@@ -450,11 +450,10 @@ const SignUp = () => {
 
                       <TouchableOpacity
                         onPress={() => onChange("caretaker")}
-                        className={`border-2 rounded-xl p-4 ${
-                          value === "caretaker"
+                        className={`border-2 rounded-xl p-4 ${value === "caretaker"
                             ? "bg-blue-50 border-blue-500"
                             : "bg-white border-gray-200"
-                        }`}
+                          }`}
                         style={{
                           minHeight: 64,
                           shadowColor: '#000',
@@ -470,11 +469,10 @@ const SignUp = () => {
                       >
                         <View className="flex-row items-center">
                           <View
-                            className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${
-                              value === "caretaker"
+                            className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${value === "caretaker"
                                 ? "border-blue-500"
                                 : "border-gray-400"
-                            }`}
+                              }`}
                           >
                             {value === "caretaker" && (
                               <View className="h-3 w-3 rounded-full bg-blue-500" />
@@ -482,11 +480,10 @@ const SignUp = () => {
                           </View>
                           <View className="flex-1">
                             <Text
-                              className={`font-semibold text-lg ${
-                                value === "caretaker"
+                              className={`font-semibold text-lg ${value === "caretaker"
                                   ? "text-blue-600"
                                   : "text-gray-800"
-                              }`}
+                                }`}
                             >
                               Caretaker
                             </Text>
@@ -509,6 +506,7 @@ const SignUp = () => {
               {/* Sign Up Button */}
               <TouchableOpacity
                 onPress={handleSubmit(onSubmit)}
+                disabled={isSubmitting}
                 className="bg-blue-600 py-4 rounded-xl items-center mt-4"
                 style={{
                   minHeight: 56,
@@ -524,7 +522,7 @@ const SignUp = () => {
                 accessibilityHint="Submit the form to create your new E-Sight account"
               >
                 <Text className="text-white font-bold text-lg">
-                  Create Account
+                  {isSubmitting ? "Creating Account..." : "Create Account"}
                 </Text>
               </TouchableOpacity>
             </View>

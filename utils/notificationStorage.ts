@@ -38,7 +38,7 @@ export interface DeviceNotification extends BaseNotification {
   type: 'device';
   deviceName: string;
   deviceId: string;
-  status: 'connected' | 'disconnected' | 'connection_failed' | 'pairing_started' | 'pairing_completed';
+  status: 'connected' | 'disconnected' | 'connection_failed' | 'pairing_started' | 'pairing_completed' | 'forgot_device';
   details?: string;
 }
 
