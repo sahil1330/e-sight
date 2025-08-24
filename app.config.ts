@@ -39,6 +39,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     newArchEnabled: true,
     ios: {
         ...config.ios,
+        icon: {
+            dark: "./assets/images/adaptive-icon.png",
+            light: "./assets/images/adaptive-icon.png"
+        },
         bundleIdentifier: getUniqueIdentifier(),
         supportsTablet: true,
         infoPlist: {
@@ -91,17 +95,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             }
         ],
         'expo-secure-store',
-        'react-native-ble-plx',
         [
-            'expo-location',
+            "react-native-ble-plx",
             {
-                locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
-                locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
-                locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
-                isIosBackgroundLocationEnabled: true,
-                isAndroidBackgroundLocationEnabled: true,
-                isAndroidForegroundServiceEnabled: true
+                "isBackgroundEnabled": true,
+                "modes": ["peripheral", "central"],
+                "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to bluetooth devices"
             }
+        ],
+        [
+        'expo-location',
+        {
+            locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
+            locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
+            locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
+            isIosBackgroundLocationEnabled: true,
+            isAndroidBackgroundLocationEnabled: true,
+            isAndroidForegroundServiceEnabled: true
+        }
         ],
         [
             'expo-notifications',
@@ -110,7 +121,23 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 color: '#000000',
                 sounds: []
             }
-        ]
+        ],
+        [
+        "expo-sqlite",
+        {
+          "enableFTS": true,
+          "useSQLCipher": true,
+          "android": {
+            // Override the shared configuration for Android
+            "enableFTS": false,
+            "useSQLCipher": false
+          },
+          "ios": {
+            // You can also override the shared configurations for iOS
+            "customBuildFlags": ["-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"]
+          }
+        }
+      ]
     ],
     experiments: {
         typedRoutes: true
