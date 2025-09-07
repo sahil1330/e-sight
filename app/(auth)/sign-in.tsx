@@ -112,13 +112,12 @@ const SignIn = () => {
                   name="identifier"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.identifier
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "identifier"
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.identifier
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "identifier"
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white"
-                      }`}
+                        }`}
                       style={{
                         fontSize,
                         minHeight: 56, // Ensure 44px+ touch target
@@ -166,13 +165,12 @@ const SignIn = () => {
                     }}
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
-                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-base ${
-                          errors.password
-                            ? "border-red-500 bg-red-50"
-                            : focusedField === "password"
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-black ${errors.password
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === "password"
                             ? "border-blue-500 bg-blue-50"
                             : "border-gray-200 bg-white"
-                        }`}
+                          }`}
                         style={{
                           fontSize,
                           minHeight: 56, // Ensure 44px+ touch target
@@ -220,6 +218,7 @@ const SignIn = () => {
               {/* Forgot Password */}
               <View className="items-end mt-2">
                 <TouchableOpacity
+                  onPress={() => router.push("/forgot-password" as any)}
                   style={{ minHeight: 44 }}
                   className="py-2"
                   accessibilityRole="button"
@@ -235,9 +234,8 @@ const SignIn = () => {
               {/* Sign In Button */}
               <TouchableOpacity
                 onPress={handleSubmit(onSubmit)}
-                className={`py-4 rounded-xl items-center mt-4 ${
-                  isSubmitting ? 'bg-blue-400' : 'bg-blue-600'
-                }`}
+                className={`py-4 rounded-xl items-center mt-4 ${isSubmitting ? 'bg-blue-400' : 'bg-blue-600'
+                  }`}
                 style={{
                   minHeight: 56,
                   shadowColor: '#000',
@@ -272,7 +270,6 @@ const SignIn = () => {
             <TouchableOpacity
               onPress={() => router.push("/(auth)/sign-up")}
               style={{ minHeight: 44 }}
-              className="py-2"
               accessibilityRole="button"
               accessibilityLabel="Navigate to sign up"
             >

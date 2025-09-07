@@ -21,20 +21,25 @@ const ConnectToDevice = () => {
     allDevices,
     isScanning,
     stopScan,
-    forgetDevice
-    // startStreamingData
+    forgetDevice,
+    connectionState,
+    checkConnectionHealth,
+    isBackgroundServiceActive,
+    startBackgroundService,
+    stopBackgroundService
   } = useBLE();
 
+  // Update connection status based on connectionState instead of just connectedDevice
   useEffect(() => {
-    // Update device name and connection status when connectedDevice changes
-    if (connectedDevice) {
-      setDeviceName(connectedDevice.name || "Unknown Device");
-      setIsDeviceConnected(true);
-    } else {
-      setDeviceName("");
-      setIsDeviceConnected(false);
+    const isReallyConnected = connectionState === 'connected' && connectedDevice !== null;
+    setIsDeviceConnected(isReallyConnected);
+    setDeviceName(connectedDevice?.name || "");
+
+    // Close popover if device disconnects
+    if (!isReallyConnected && showPopover) {
+      setShowPopover(false);
     }
-  }, [connectedDevice])
+  }, [connectedDevice, connectionState, showPopover]);
 
   useEffect(() => {
     if (isScanning) {
@@ -42,50 +47,30 @@ const ConnectToDevice = () => {
       setModalVisible(true);
     } else {
       console.log("Stopped scanning.");
-      setModalVisible(false);
+      if (!isConnecting) {
+        setModalVisible(false);
+      }
     }
-  }, [isScanning])
+  }, [isScanning, isConnecting]);
 
   // Handle device connection
   const handleConnectToDevice = async (device: Device) => {
     try {
       setIsConnecting(true);
       await connectToDevice(device);
-      setDeviceName(device.name || "Unknown Device");
-      setIsDeviceConnected(true);
       setModalVisible(false);
 
-      // Start streaming data after connection
-      // await startStreamingData(device);
-
-      Alert.alert("Success", `Connected to ${device.name || "Unknown Device"}`);
+      // Don't show alert here as the connection state will be handled by the hook
+      // Alert.alert("Success", `Connected to ${device.name || "Unknown Device"}`);
     } catch (error) {
-      Alert.alert("Connection Error", "Failed to connect to device");
       console.error("Connection error:", error);
+      Alert.alert("Connection Failed", "Unable to connect to device. Please try again.");
     } finally {
       setIsConnecting(false);
     }
   };
 
   // Handle device disconnection with confirmation
-  /**
-   * Handles the device disconnection process with user confirmation.
-   * Displays a confirmation dialog and disconnects from the currently connected device when confirmed.
-   * 
-   * @async
-   * @returns {Promise<void>}
-   * @throws Will throw an error if the disconnection process fails
-   * 
-   * State changes:
-   * - Sets showPopover to false immediately
-   * - When disconnection is successful:
-   *   - Sets isDeviceConnected to false
-   *   - Clears the deviceName
-   * 
-   * User interaction:
-   * - Shows a confirmation alert with Cancel/Disconnect options
-   * - Displays success/error alerts based on the operation result
-   */
   const handleDisconnectDevice = async () => {
     setShowPopover(false);
     Alert.alert(
@@ -102,8 +87,6 @@ const ConnectToDevice = () => {
           onPress: async () => {
             try {
               await disconnectFromDevice();
-              setIsDeviceConnected(false);
-              setDeviceName("");
               Alert.alert("Disconnected", "Device has been disconnected successfully");
             } catch (error) {
               Alert.alert("Disconnection Error", "Failed to disconnect from device");
@@ -115,14 +98,6 @@ const ConnectToDevice = () => {
     );
   };
 
-  /**
-   * Removes a paired/connected device from the system's memory or connection history.
-   * This function handles the process of forgetting a previously connected device.
-   * 
-   * @param device - The device object to be forgotten/removed
-   * @returns A Promise that resolves when the device has been successfully forgotten
-   * @throws Might throw an error if the device disconnection or forgetting process fails
-   */
   const handleForgetDevice = async () => {
     setShowPopover(false);
     Alert.alert(
@@ -139,8 +114,6 @@ const ConnectToDevice = () => {
           onPress: async () => {
             try {
               await forgetDevice();
-              setIsDeviceConnected(false);
-              setDeviceName("");
               Alert.alert("Forgot", "Device has been forgotten successfully");
             } catch (error) {
               Alert.alert("Forget Error", "Failed to forget device");
@@ -151,6 +124,17 @@ const ConnectToDevice = () => {
       ]
     );
   }
+
+  const handleConnectionHealthCheck = async () => {
+    setShowPopover(false);
+    try {
+      await checkConnectionHealth();
+      Alert.alert("Connection Check", "Connection health check completed");
+    } catch (error) {
+      Alert.alert("Health Check Error", "Failed to check connection health");
+      console.error("Health check error:", error);
+    }
+  };
 
   // Open modal and start scanning
   const openModal = () => {
@@ -168,184 +152,302 @@ const ConnectToDevice = () => {
 
   // Render device item
   const renderDevice = ({ item }: { item: Device }) => (
-    <View
-      className="flex-row justify-between items-center p-4 border-b border-gray-100"
-      accessibilityRole="text"
-      accessibilityLabel={`Device: ${item.name || "Unknown Device"}, ID: ${item.id}`}
+    <TouchableOpacity
+      className="flex-row items-center p-4 bg-white rounded-xl border border-gray-200 mx-1 my-1"
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 2,
+      }}
+      onPress={() => handleConnectToDevice(item)}
+      disabled={isConnecting}
+      accessibilityRole="button"
+      accessibilityLabel={`Connect to ${item.name || 'Unknown Device'}`}
     >
-      <View className="flex-1 flex-row items-center">
-        <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
-          <Ionicons name="bluetooth" size={20} color="#3B82F6" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-lg font-medium text-gray-800">
-            {item.name || "Unknown Device"}
-          </Text>
-          <Text className="text-sm text-gray-500" numberOfLines={1}>
-            {item.id}
-          </Text>
-        </View>
+      <View className="w-12 h-12 rounded-full bg-blue-100 items-center justify-center mr-4">
+        <Ionicons name="bluetooth" size={24} color="#3B82F6" />
       </View>
-      <TouchableOpacity
-        className="bg-blue-600 px-4 py-3 rounded-xl"
-        style={{
-          minHeight: 44,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}
-        onPress={() => handleConnectToDevice(item)}
-        disabled={isConnecting}
-        accessibilityRole="button"
-        accessibilityLabel={`Connect to ${item.name || "Unknown Device"}`}
-      >
-        <Text className="text-white font-semibold text-base">
-          {(item.id === connectedDevice?.id && isConnecting) ? "Connecting..." : "Connect"}
+
+      <View className="flex-1">
+        <Text className="text-gray-800 text-base font-semibold">
+          {item.name || "Unknown Device"}
         </Text>
-      </TouchableOpacity>
-    </View>
+        <Text className="text-gray-500 text-sm">
+          {item.id}
+        </Text>
+      </View>
+
+      {isConnecting ? (
+        <ActivityIndicator size="small" color="#3B82F6" />
+      ) : (
+        <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+      )}
+    </TouchableOpacity>
   );
 
-  return (
-    <View className="w-full">
-      {!isDeviceConnected ? (
-        <View className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
-          <View className="items-center">
+  // Show connected device UI
+  if (isDeviceConnected && connectedDevice) {
+    return (
+      <View className="space-y-4">
+        {/* Connection Status */}
+        <View className="bg-green-50 rounded-xl p-4 border border-green-200">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mr-4">
+                <Ionicons name="bluetooth-outline" size={24} color="#059669" />
+              </View>
+
+              <View className="flex-1">
+                <Text className="text-green-800 text-lg font-semibold">
+                  {deviceName}
+                </Text>
+                <View className="flex-row items-center mt-1">
+                  <View className="w-2.5 h-2.5 rounded-full bg-green-500 mr-2" />
+                  <Text className="text-green-600 text-base">
+                    {connectionState === 'connected' ? 'Connected' :
+                      connectionState === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                  </Text>
+                </View>
+                {isBackgroundServiceActive && (
+                  <Text className="text-green-500 text-sm mt-1">
+                    Background monitoring active
+                  </Text>
+                )}
+              </View>
+            </View>
+
+            {/* Three Dots Menu */}
             <TouchableOpacity
-              className="w-16 h-16 rounded-full bg-blue-100 items-center justify-center mb-4"
-              onPress={openModal}
+              onPress={() => setShowPopover(true)}
+              className="w-10 h-10 items-center justify-center rounded-full bg-green-100"
+              accessibilityLabel="Device options"
               accessibilityRole="button"
-              accessibilityLabel="Connect to navigation device"
-              accessibilityHint="Double tap to scan for available navigation devices"
             >
-              <Entypo name="plus" size={32} color="#3B82F6" />
+              <Entypo name="dots-three-vertical" size={16} color="#059669" />
             </TouchableOpacity>
-            <Text
-              className="text-gray-700 text-lg text-center font-medium"
-              accessibilityLabel="No device connected. Tap the plus button to connect to a navigation device."
-            >
-              Connect Navigation Device
-            </Text>
-            <Text className="text-gray-500 text-base text-center mt-2">
-              Tap to scan for available devices
-            </Text>
           </View>
         </View>
-      ) : (
-        <View className="bg-green-50 rounded-xl p-6 border border-green-200">
-          <View className="flex-row items-center justify-between">
-            <View className="flex-1 flex-row items-center">
-              <View className="w-12 h-12 rounded-full bg-green-100 items-center justify-center mr-4">
-                <Ionicons name="bluetooth" size={24} color="#059669" />
+
+        {/* Background Service Status Card */}
+        {isBackgroundServiceActive && (
+          <View className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <View className="flex-row items-center">
+              <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-3">
+                <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
               </View>
               <View className="flex-1">
-                <Text
-                  className="text-green-800 text-lg font-semibold"
-                  accessibilityLabel={`Connected to ${deviceName || "navigation device"}`}
-                >
-                  {deviceName || "Connected Device"}
+                <Text className="text-blue-800 text-base font-semibold">
+                  Background Monitoring Active
                 </Text>
-                <Text className="text-green-600 text-base">
-                  Status: Connected
+                <Text className="text-blue-600 text-sm">
+                  App will monitor device even when minimized
                 </Text>
               </View>
-            </View>
-
-            <View className="relative">
-              <TouchableOpacity
-                className="p-3"
-                onPress={() => setShowPopover(!showPopover)}
-                accessibilityRole="button"
-                accessibilityLabel="Device options menu"
-              >
-                <Feather name="more-vertical" size={24} color="#059669" />
-              </TouchableOpacity>
-
-              {/* Popover Menu */}
-              {showPopover && (
-                <Modal
-                  transparent={true}
-                  animationType="fade"
-                  visible={showPopover}
-                  onRequestClose={() => setShowPopover(false)}
-                >
-                  {/* Backdrop to close popover */}
-                  <TouchableOpacity
-                    className="flex-1 bg-black/20"
-                    activeOpacity={1}
-                    onPress={() => setShowPopover(false)}
-                  >
-                    {/* Popover Content */}
-                    <View
-                      className="absolute right-5 bg-white rounded-xl shadow-2xl border border-gray-200 min-w-48"
-                      style={{
-                        top: '45%',
-                        elevation: 20,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 8 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 10,
-                      }}
-                    >
-                      <TouchableOpacity
-                        className="px-5 py-4 border-b border-gray-100"
-                        onPress={handleDisconnectDevice}
-                        accessibilityRole="button"
-                        accessibilityLabel="Disconnect device"
-                      >
-                        <View className="flex-row items-center">
-                          <Feather name="x-circle" size={20} color="#EF4444" />
-                          <Text className="ml-3 text-red-500 font-semibold text-base">
-                            Disconnect
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        className="px-5 py-4"
-                        onPress={() => setShowPopover(false)}
-                        accessibilityRole="button"
-                        accessibilityLabel="Device information"
-                      >
-                        <View className="flex-row items-center">
-                          <Feather name="info" size={20} color="#6B7280" />
-                          <Text className="ml-3 text-gray-600 font-semibold text-base">
-                            Device Info
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        className="px-5 py-4"
-                        onPress={handleForgetDevice}
-                        accessibilityRole="button"
-                        accessibilityLabel="Device information"
-                      >
-                        <View className="flex-row items-center">
-                          <Feather name="info" size={20} color="#FF0000" />
-                          <Text className="ml-3 font-semibold text-red-500">
-                            Forget Device
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                </Modal>
-              )}
+              <View className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
             </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Device Selection Modal */}
+        {/* Connection Status Warning */}
+        {connectionState === 'connecting' && (
+          <View className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+            <View className="flex-row items-center">
+              <ActivityIndicator size="small" color="#D97706" />
+              <Text className="text-yellow-700 text-base font-medium ml-3">
+                Connecting to device...
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {connectionState === 'disconnected' && connectedDevice && (
+          <View className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <View className="flex-row items-center">
+              <Ionicons name="warning-outline" size={20} color="#DC2626" />
+              <Text className="text-red-700 text-base font-medium ml-3">
+                Device connection lost
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Device Options Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={showPopover}
+          onRequestClose={() => setShowPopover(false)}
+        >
+          <View className="flex-1 justify-center items-center bg-black/50 px-6">
+            <View className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+              <Text className="text-xl font-bold text-gray-800 mb-6 text-center">
+                Device Options
+              </Text>
+
+              {/* Health Check Option */}
+              <TouchableOpacity
+                onPress={handleConnectionHealthCheck}
+                className="flex-row items-center py-4 px-2 rounded-xl"
+                accessibilityLabel="Check device connection health"
+                accessibilityRole="button"
+              >
+                <View className="w-10 h-10 rounded-full bg-blue-100 items-center justify-center mr-4">
+                  <Ionicons name="pulse-outline" size={20} color="#3B82F6" />
+                </View>
+                <Text className="text-gray-800 text-base font-semibold">Check Connection</Text>
+              </TouchableOpacity>
+
+              {/* Background Service Toggle */}
+              <TouchableOpacity
+                onPress={async () => {
+                  setShowPopover(false);
+                  try {
+                    if (isBackgroundServiceActive) {
+                      await stopBackgroundService();
+                      Alert.alert("Background Service", "Background monitoring disabled");
+                    } else {
+                      await startBackgroundService();
+                      Alert.alert("Background Service", "Background monitoring enabled");
+                    }
+                  } catch (error) {
+                    Alert.alert("Error", "Failed to toggle background service");
+                    console.error("Background service toggle error:", error);
+                  }
+                }}
+                className="flex-row items-center justify-between py-4 px-2 rounded-xl"
+                accessibilityLabel={isBackgroundServiceActive ? "Disable background monitoring" : "Enable background monitoring"}
+                accessibilityRole="button"
+              >
+                <View className="flex-row items-center flex-1">
+                  <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isBackgroundServiceActive ? 'bg-green-100' : 'bg-gray-100'}`}>
+                    <Ionicons 
+                      name={isBackgroundServiceActive ? "shield-checkmark-outline" : "shield-outline"} 
+                      size={20} 
+                      color={isBackgroundServiceActive ? "#059669" : "#6B7280"} 
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-gray-800 text-base font-semibold">Background Monitoring</Text>
+                    <Text className="text-gray-500 text-sm">
+                      {isBackgroundServiceActive ? "Active" : "Inactive"}
+                    </Text>
+                  </View>
+                </View>
+                <View 
+                  className={`w-12 h-6 rounded-full ${isBackgroundServiceActive ? 'bg-green-500' : 'bg-gray-300'} relative`}
+                >
+                  <View 
+                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-200 ${
+                      isBackgroundServiceActive ? 'left-6' : 'left-0.5'
+                    }`}
+                  />
+                </View>
+              </TouchableOpacity>
+
+              {/* Disconnect Option */}
+              <TouchableOpacity
+                onPress={handleDisconnectDevice}
+                className="flex-row items-center py-4 px-2 rounded-xl"
+                accessibilityLabel="Disconnect from device"
+                accessibilityRole="button"
+              >
+                <View className="w-10 h-10 rounded-full bg-red-100 items-center justify-center mr-4">
+                  <Feather name="x-circle" size={20} color="#DC2626" />
+                </View>
+                <Text className="text-gray-800 text-base font-semibold">Disconnect</Text>
+              </TouchableOpacity>
+
+              {/* Device Info Option */}
+              <TouchableOpacity
+                onPress={() => {
+                  setShowPopover(false);
+                  Alert.alert("Device Info", `Device: ${deviceName}\nID: ${connectedDevice.id}\nStatus: ${connectionState}`);
+                }}
+                className="flex-row items-center py-4 px-2 rounded-xl"
+                accessibilityLabel="View device information"
+                accessibilityRole="button"
+              >
+                <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center mr-4">
+                  <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
+                </View>
+                <Text className="text-gray-800 text-base font-semibold">Device Info</Text>
+              </TouchableOpacity>
+
+              {/* Forget Device Option */}
+              <TouchableOpacity
+                onPress={handleForgetDevice}
+                className="flex-row items-center py-4 px-2 rounded-xl mb-4"
+                accessibilityLabel="Forget this device"
+                accessibilityRole="button"
+              >
+                <View className="w-10 h-10 rounded-full bg-orange-100 items-center justify-center mr-4">
+                  <Ionicons name="trash-outline" size={20} color="#EA580C" />
+                </View>
+                <Text className="text-gray-800 text-base font-semibold">Forget Device</Text>
+              </TouchableOpacity>
+
+              {/* Close Button */}
+              <TouchableOpacity
+                onPress={() => setShowPopover(false)}
+                className="bg-gray-100 py-3 rounded-xl"
+                accessibilityLabel="Close options"
+                accessibilityRole="button"
+              >
+                <Text className="text-gray-700 text-base font-semibold text-center">Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
+  }
+
+  // Show scan/connect UI when no device is connected
+  return (
+    <View className="space-y-4">
+      {/* No Device Connected */}
+      <View className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+        <View className="items-center">
+          <View className="w-16 h-16 rounded-full bg-gray-200 items-center justify-center mb-4">
+            <Ionicons name="bluetooth-outline" size={32} color="#6B7280" />
+          </View>
+
+          <Text className="text-gray-800 text-lg font-semibold mb-2">
+            No Device Connected
+          </Text>
+          <Text className="text-gray-500 text-base text-center mb-6">
+            Connect to your E-Sight navigation device to get started
+          </Text>
+
+          <TouchableOpacity
+            className="bg-blue-600 px-8 py-4 rounded-xl flex-row items-center"
+            style={{
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}
+            onPress={openModal}
+            accessibilityRole="button"
+            accessibilityLabel="Scan for devices"
+          >
+            <Ionicons name="search" size={20} color="white" />
+            <Text className="text-white font-semibold text-base ml-2">
+              Scan for Devices
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Scanning Modal */}
       <Modal
         animationType="slide"
         transparent={true}
         visible={modalVisible}
         onRequestClose={closeModal}
-        accessibilityViewIsModal={true}
       >
         <View className="flex-1 justify-center items-center bg-black/50 px-6">
           <View className="bg-white rounded-2xl p-6 w-full max-w-md max-h-96">
@@ -386,14 +488,6 @@ const ConnectToDevice = () => {
                 </Text>
                 <TouchableOpacity
                   className="bg-blue-600 px-6 py-4 rounded-xl mt-6"
-                  style={{
-                    minHeight: 56,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
                   onPress={scanForPeripherals}
                   accessibilityRole="button"
                   accessibilityLabel="Scan again for devices"
@@ -414,14 +508,6 @@ const ConnectToDevice = () => {
             <View className="flex-row justify-between mt-6 space-x-3">
               <TouchableOpacity
                 className="bg-gray-200 px-6 py-4 rounded-xl flex-1"
-                style={{
-                  minHeight: 56,
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
-                }}
                 onPress={closeModal}
                 accessibilityRole="button"
                 accessibilityLabel="Cancel device selection"
@@ -432,14 +518,6 @@ const ConnectToDevice = () => {
               {isScanning ? (
                 <TouchableOpacity
                   className="bg-red-600 px-6 py-4 rounded-xl flex-1 ml-3"
-                  style={{
-                    minHeight: 56,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
                   onPress={stopScan}
                   accessibilityRole="button"
                   accessibilityLabel="Stop scanning for devices"
@@ -449,19 +527,11 @@ const ConnectToDevice = () => {
               ) : (
                 <TouchableOpacity
                   className="bg-blue-600 px-6 py-4 rounded-xl flex-1 ml-3"
-                  style={{
-                    minHeight: 56,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.1,
-                    shadowRadius: 4,
-                    elevation: 3,
-                  }}
                   onPress={scanForPeripherals}
                   accessibilityRole="button"
                   accessibilityLabel="Start scanning for devices"
                 >
-                  <Text className="text-white font-semibold text-center text-base">Scan</Text>
+                  <Text className="text-white font-semibold text-center text-base">Start Scan</Text>
                 </TouchableOpacity>
               )}
             </View>

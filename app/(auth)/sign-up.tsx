@@ -281,7 +281,7 @@ const SignUp = () => {
                     name="password"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
-                        className={`border-2 rounded-xl px-4 py-4 pr-16 ${errors.password
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-black ${errors.password
                             ? "border-red-500 bg-red-50"
                             : focusedField === "password"
                               ? "border-blue-500 bg-blue-50"
@@ -342,7 +342,7 @@ const SignUp = () => {
                     name="confirmPassword"
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
-                        className={`border-2 rounded-xl px-4 py-4 pr-16 ${errors.confirmPassword
+                        className={`border-2 rounded-xl px-4 py-4 pr-16 text-black ${errors.confirmPassword
                             ? "border-red-500 bg-red-50"
                             : focusedField === "confirmPassword"
                               ? "border-blue-500 bg-blue-50"

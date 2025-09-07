@@ -48,8 +48,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         infoPlist: {
             NSLocationAlwaysAndWhenInUseUsageDescription: 'This app needs location access to send your current location to the server in the background.',
             NSLocationWhenInUseUsageDescription: 'This app needs location access to send your current location to the server.',
-            UIBackgroundModes: ['location', 'background-fetch']
-        }
+            UIBackgroundModes: ['location', "bluetooth-central", "bluetooth-peripheral", "background-fetch", "background-processing"],
+        },
     },
     android: {
         ...config.android,
@@ -67,7 +67,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         permissions: [
             'android.permission.BLUETOOTH',
             'android.permission.BLUETOOTH_ADMIN',
-            'android.permission.BLUETOOTH_CONNECT'
+            'android.permission.BLUETOOTH_CONNECT',
+            "android.permission.BLUETOOTH_PRIVILEGED",
+            "android.permission.WAKE_LOCK",
+            "android.permission.FOREGROUND_SERVICE"
         ]
     },
     web: {
@@ -104,15 +107,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
             }
         ],
         [
-        'expo-location',
-        {
-            locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
-            locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
-            locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
-            isIosBackgroundLocationEnabled: true,
-            isAndroidBackgroundLocationEnabled: true,
-            isAndroidForegroundServiceEnabled: true
-        }
+            'expo-location',
+            {
+                locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
+                locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
+                locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
+                isIosBackgroundLocationEnabled: true,
+                isAndroidBackgroundLocationEnabled: true,
+                isAndroidForegroundServiceEnabled: true
+            }
         ],
         [
             'expo-notifications',
@@ -122,22 +125,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 sounds: []
             }
         ],
+        'expo-task-manager',
         [
-        "expo-sqlite",
-        {
-          "enableFTS": true,
-          "useSQLCipher": true,
-          "android": {
-            // Override the shared configuration for Android
-            "enableFTS": false,
-            "useSQLCipher": false
-          },
-          "ios": {
-            // You can also override the shared configurations for iOS
-            "customBuildFlags": ["-DSQLITE_ENABLE_DBSTAT_VTAB=1 -DSQLITE_ENABLE_SNAPSHOT=1"]
-          }
-        }
-      ]
+            'expo-location',
+            {
+                locationAlwaysAndWhenInUsePermission: 'Allow $(PRODUCT_NAME) to access your location',
+                locationAlwaysPermission: 'Allow $(PRODUCT_NAME) to access your location even when the app is closed or in the background',
+                locationWhenInUsePermission: 'Allow ${PRODUCT_NAME} to access your location while you are using the app',
+                isIosBackgroundLocationEnabled: true,
+                isAndroidBackgroundLocationEnabled: true,
+                isAndroidForegroundServiceEnabled: true
+            }
+        ],
     ],
     experiments: {
         typedRoutes: true

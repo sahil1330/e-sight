@@ -1,27 +1,35 @@
-import { PREVIOUS_DEVICES } from "@/utils/constants";
+import { LAST_LOCATION_TOKEN, PREVIOUS_DEVICES, SOSMESSAGE, USER_AUTH_STATE } from "@/utils/constants";
 import { registeredDevices } from "@/utils/devices";
 import { addDeviceNotification } from "@/utils/notificationHelpers";
+import { sendSOS } from "@/utils/sendSOSFeature";
 import { Buffer } from "buffer";
 import * as ExpoDevice from "expo-device";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { PermissionsAndroid, Platform } from "react-native";
-import { BleError, BleManager, Characteristic, Device } from "react-native-ble-plx";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
+import { BleError, BleManager, Characteristic, Device, Subscription } from "react-native-ble-plx";
+import BackgroundBLEService from "../utils/BackgroundBLEService";
+
 interface BLEAPI {
     requestPermissions(): Promise<boolean>;
     scanForPeripherals(): void;
     connectToDevice(device: Device): Promise<void>;
-    disconnectFromDevice(): Promise<void>; // Remove deviceId parameter
+    disconnectFromDevice(): Promise<void>;
     connectedDevice: Device | null;
-    setConnectedDevice: (device: Device | null) => void; // Add setter for connectedDevice
+    setConnectedDevice: (device: Device | null) => void;
     allDevices: Device[];
     messages: string[];
     isScanning: boolean;
     characteristic: Characteristic | null;
     startStreamingData(device: Device, writeCharacteristic: Characteristic | null): Promise<void>;
     onMessageUpdate(error: BleError | null, characteristic: Characteristic | null): Promise<number>;
-    stopScan(): void; // Add stop scan method
-    forgetDevice(): void
+    stopScan(): void;
+    forgetDevice(): void;
+    connectionState: 'connected' | 'disconnected' | 'connecting';
+    checkConnectionHealth(): Promise<void>;
+    isBackgroundServiceActive: boolean;
+    startBackgroundService(): Promise<boolean>;
+    stopBackgroundService(): Promise<boolean>;
 }
 
 function useBLE(): BLEAPI {
@@ -31,6 +39,171 @@ function useBLE(): BLEAPI {
     const [messages, setMessages] = useState<string[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [characteristic, setCharacteristic] = useState<Characteristic | null>(null);
+    const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+    const [isBackgroundServiceActive, setIsBackgroundServiceActive] = useState(false);
+
+    // Refs for cleanup and monitoring
+    const disconnectSubscription = useRef<Subscription | null>(null);
+    const healthCheckInterval = useRef<number | null>(null);
+    const appState = useRef(AppState.currentState);
+
+    // Background service instance
+    const backgroundService = useMemo(() => BackgroundBLEService.getInstance(), []);
+
+    // Initialize background service on mount
+    useEffect(() => {
+        const initializeBackgroundService = async () => {
+            const isRunning = await backgroundService.isServiceRunning();
+            setIsBackgroundServiceActive(isRunning);
+
+            if (!isRunning) {
+                // Auto-start background service
+                const started = await backgroundService.startBackgroundService();
+                setIsBackgroundServiceActive(started);
+            }
+        };
+
+        initializeBackgroundService();
+    }, [backgroundService]);
+
+    // Monitor app state changes to check connection when app comes to foreground
+    const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
+        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+            // App came to foreground - check connection health
+            if (connectedDevice && connectionState === 'connected') {
+                checkConnectionHealth();
+            }
+        }
+        appState.current = nextAppState;
+    }, [connectedDevice, connectionState]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        return () => subscription?.remove();
+    }, [handleAppStateChange]);
+
+    // Background service control functions
+    const startBackgroundService = useCallback(async (): Promise<boolean> => {
+        const started = await backgroundService.startBackgroundService();
+        setIsBackgroundServiceActive(started);
+        return started;
+    }, [backgroundService]);
+
+    const stopBackgroundService = useCallback(async (): Promise<boolean> => {
+        const stopped = await backgroundService.stopBackgroundService();
+        setIsBackgroundServiceActive(!stopped);
+        return stopped;
+    }, [backgroundService]);
+
+    // Connection health check function
+    const checkConnectionHealth = useCallback(async () => {
+        if (!connectedDevice) return;
+
+        try {
+            // Try to check if device is still connected
+            const isConnected = await connectedDevice.isConnected();
+
+            if (!isConnected) {
+                console.log('Device health check failed - device disconnected');
+
+                // Add disconnection notification
+                await addDeviceNotification(
+                    connectedDevice.name || "Unknown Device",
+                    connectedDevice.id,
+                    'disconnected',
+                    'Connection lost - device may be turned off'
+                );
+
+                // Update state
+                setConnectedDevice(null);
+                setCharacteristic(null);
+                setConnectionState('disconnected');
+            } else {
+                // Device is still connected, ensure state is correct
+                if (connectionState !== 'connected') {
+                    setConnectionState('connected');
+                }
+            }
+        } catch (error) {
+            console.log('Connection health check error:', error);
+
+            // Device is likely disconnected due to error
+            await addDeviceNotification(
+                connectedDevice.name || "Unknown Device",
+                connectedDevice.id,
+                'disconnected',
+                'Connection check failed - device may be turned off'
+            );
+
+            setConnectedDevice(null);
+            setCharacteristic(null);
+            setConnectionState('disconnected');
+        }
+    }, [connectedDevice, connectionState]);
+
+    // Set up connection monitoring when device connects
+    useEffect(() => {
+        if (!connectedDevice) {
+            // Clean up monitoring when no device is connected
+            if (disconnectSubscription.current) {
+                disconnectSubscription.current.remove();
+                disconnectSubscription.current = null;
+            }
+            if (healthCheckInterval.current) {
+                clearInterval(healthCheckInterval.current);
+                healthCheckInterval.current = null;
+            }
+            return;
+        }
+
+        console.log('Setting up connection monitoring for:', connectedDevice.name);
+
+        // Update background service with connected device
+        backgroundService.setConnectedDevice(connectedDevice);
+
+        // Monitor disconnection events - This is the key to detecting when device is turned off
+        disconnectSubscription.current = bleManager.onDeviceDisconnected(
+            connectedDevice.id,
+            async (error, device) => {
+                if (error) {
+                    console.log('Device disconnected with error:', error);
+                } else {
+                    console.log('Device disconnected:', device?.name || 'Unknown Device');
+                }
+
+                // Update state immediately when device disconnects
+                setConnectedDevice(null);
+                setCharacteristic(null);
+                setConnectionState('disconnected');
+
+                // Update background service
+                await backgroundService.setConnectedDevice(null);
+
+                // Add disconnection notification
+                await addDeviceNotification(
+                    device?.name || connectedDevice.name || "Unknown Device",
+                    device?.id || connectedDevice.id,
+                    'disconnected',
+                    error ? 'Device disconnected with error' : 'Device was turned off or went out of range'
+                );
+            }
+        );
+
+        // Set up periodic health checks every 10 seconds for additional reliability
+        healthCheckInterval.current = setInterval(checkConnectionHealth, 10000);
+
+        // Set connection state to connected when monitoring is established
+        setConnectionState('connected');
+
+        return () => {
+            if (disconnectSubscription.current) {
+                disconnectSubscription.current.remove();
+            }
+            if (healthCheckInterval.current) {
+                clearInterval(healthCheckInterval.current);
+            }
+        };
+    }, [connectedDevice, bleManager, checkConnectionHealth, backgroundService]);
 
     // Clean up on unmount
     useEffect(() => {
@@ -40,6 +213,12 @@ function useBLE(): BLEAPI {
             }
             if (connectedDevice) {
                 bleManager.cancelDeviceConnection(connectedDevice.id);
+            }
+            if (disconnectSubscription.current) {
+                disconnectSubscription.current.remove();
+            }
+            if (healthCheckInterval.current) {
+                clearInterval(healthCheckInterval.current);
             }
         };
     }, [bleManager, isScanning, connectedDevice]);
@@ -140,9 +319,6 @@ function useBLE(): BLEAPI {
                                 connectToDevice(device);
                                 return;
                             }
-                            //console.log("Device Manufacturer Data:", device.manufacturerData);
-                            // console.log("Device RSSI:", device.rssi);
-                            // console.log("Device Manufacturer Data:", device.manufacturerData);
                             setAllDevices(prevDevices => {
                                 if (!isDuplicateDevice(prevDevices, device)) {
                                     console.log("Discovered device:", device.name);
@@ -170,6 +346,8 @@ function useBLE(): BLEAPI {
                 console.log("Already connected to this device:", device.name || "Unnamed Device");
                 return;
             }
+
+            setConnectionState('connecting');
 
             // Disconnect from previous device if exists
             if (connectedDevice && connectedDevice.id !== device.id) {
@@ -200,12 +378,16 @@ function useBLE(): BLEAPI {
                 'Attempting to connect to device'
             );
 
-            const deviceConnection = await bleManager.connectToDevice(device.id)
+            const deviceConnection = await bleManager.connectToDevice(device.id);
             if (!deviceConnection) {
                 throw new Error("Failed to connect to device");
             }
 
             setConnectedDevice(deviceConnection);
+            // Update background service immediately
+            await backgroundService.setConnectedDevice(deviceConnection);
+
+            // Note: connectionState will be set to 'connected' in the useEffect monitoring setup
 
             // Add successful connection notification
             await addDeviceNotification(
@@ -214,6 +396,8 @@ function useBLE(): BLEAPI {
                 'connected',
                 'Successfully connected to device'
             );
+
+            // Store device in SecureStore
             const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
             const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
             if (!prevDevicesArray.some((prevDevice: Device) => prevDevice.id === deviceConnection.id)) {
@@ -223,6 +407,7 @@ function useBLE(): BLEAPI {
                 await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(prevDevicesArray));
             }
             console.log("Devices stored in SecureStore:", await SecureStore.getItemAsync(PREVIOUS_DEVICES));
+
             await deviceConnection.discoverAllServicesAndCharacteristics();
             try {
                 await deviceConnection.requestMTU(512);
@@ -236,7 +421,6 @@ function useBLE(): BLEAPI {
 
             if (services.length > 0) {
                 const characteristics = await deviceConnection.characteristicsForService(services[2].uuid);
-                // const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
                 console.log("Characteristics found:", characteristics.length);
                 console.log("Characteristics found:", characteristics.map(c => c.uuid));
                 console.log("Characteristics Services found:", characteristics.map(c => c.serviceUUID));
@@ -257,6 +441,8 @@ function useBLE(): BLEAPI {
             }
         } catch (error) {
             console.error("Error connecting to device:", error);
+            setConnectionState('disconnected');
+            await backgroundService.setConnectedDevice(null);
 
             // Add connection failed notification
             await addDeviceNotification(
@@ -275,7 +461,6 @@ function useBLE(): BLEAPI {
     const disconnectFromDevice = async () => {
         if (connectedDevice) {
             try {
-                // const result = await bleManager.cancelDeviceConnection(connectedDevice.id);
                 await bleManager.cancelDeviceConnection(connectedDevice.id);
                 console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
 
@@ -289,6 +474,7 @@ function useBLE(): BLEAPI {
 
                 setConnectedDevice(null);
                 setCharacteristic(null);
+                setConnectionState('disconnected');
             } catch (error) {
                 console.error("Error disconnecting from device:", error);
 
@@ -302,6 +488,7 @@ function useBLE(): BLEAPI {
 
                 setConnectedDevice(null);
                 setCharacteristic(null);
+                setConnectionState('disconnected');
             }
         }
     };
@@ -320,6 +507,16 @@ function useBLE(): BLEAPI {
             const value = (Buffer.from(characteristic.value, 'base64')).toString('utf-8');
             console.log("Received data:", value);
             setMessages(prevMessages => [...prevMessages, value]);
+            if (value === SOSMESSAGE) {
+                const lastLocationDataRaw = await SecureStore.getItemAsync(LAST_LOCATION_TOKEN);
+                const lastLocationData = await JSON.parse(lastLocationDataRaw as string);
+                const userDetailsRaw = await SecureStore.getItemAsync(USER_AUTH_STATE);
+                const userData = await JSON.parse(userDetailsRaw as string);
+                await sendSOS(userData.userDetails, {
+                    latitude: lastLocationData.location.latitude,
+                    longitude: lastLocationData.location.longitude
+                })
+            }
             return 0;
         } catch (decodeError) {
             console.error("Error decoding characteristic value:", decodeError);
@@ -361,7 +558,7 @@ function useBLE(): BLEAPI {
                     connectedDevice.name || "Unknown Device",
                     connectedDevice.id,
                     'forgot_device',
-                    'Device is forgotted by user'
+                    'Device is forgotten by user'
                 );
             }
         } catch (error) {
@@ -387,9 +584,13 @@ function useBLE(): BLEAPI {
         characteristic,
         onMessageUpdate,
         stopScan,
-        forgetDevice
+        forgetDevice,
+        connectionState,
+        checkConnectionHealth,
+        isBackgroundServiceActive,
+        startBackgroundService,
+        stopBackgroundService
     };
 }
 
 export default useBLE;
-
