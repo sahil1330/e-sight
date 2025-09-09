@@ -10,6 +10,7 @@ interface CodeInputProps {
     error?: string;
     focusedIndex?: number;
     editable?: boolean;
+    inputRefs?: React.MutableRefObject<(TextInput | null)[]>;
 }
 
 const CodeInput: React.FC<CodeInputProps> = ({
@@ -20,9 +21,11 @@ const CodeInput: React.FC<CodeInputProps> = ({
     onBlur,
     error,
     focusedIndex,
-    editable = true
+    editable = true,
+    inputRefs
 }) => {
-    const codeInputRefs = useRef<(TextInput | null)[]>([]);
+    const localRefs = useRef<(TextInput | null)[]>([]);
+    const refs = inputRefs || localRefs;
 
     return (
         <View className="mb-6">
@@ -35,7 +38,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                     <TextInput
                         key={index}
                         ref={(ref) => {
-                            codeInputRefs.current[index] = ref;
+                            refs.current[index] = ref;
                         }}
                         className={`w-14 h-16 border-2 text-center rounded-xl text-xl font-bold ${
                             error && codeDigits.join("").length < 6
@@ -51,7 +54,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                             shadowRadius: 2,
                             elevation: 1,
                         }}
-                        maxLength={index === 0 ? 6 : 1}
+                        maxLength={1}
                         keyboardType="number-pad"
                         value={codeDigits[index]}
                         onChangeText={(text) => onCodeChange(text, index)}
@@ -61,6 +64,7 @@ const CodeInput: React.FC<CodeInputProps> = ({
                         accessibilityLabel={`Verification code digit ${index + 1}`}
                         accessibilityHint={`Enter the ${index + 1} digit of your verification code`}
                         editable={editable}
+                        selectTextOnFocus={true}
                     />
                 ))}
             </View>

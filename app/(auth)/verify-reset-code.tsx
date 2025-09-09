@@ -30,6 +30,7 @@ const VerifyResetCodeScreen = () => {
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
     const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
     const [isLoading, setIsLoading] = useState(false);
+    const codeInputRefs = React.useRef<(any | null)[]>([]);
 
     const isSmallDevice = width < 380;
     const headerFontSize = isSmallDevice ? 24 : 28;
@@ -90,38 +91,74 @@ const VerifyResetCodeScreen = () => {
 
     const handleCodeChange = (text: string, index: number) => {
         if (text.length > 1) {
-            // Handle paste of the entire code
+            // Handle paste of the entire code (when pasting multiple digits)
             const pastedCode = text.slice(0, 6);
             const newDigits = [...codeDigits];
 
-            for (let i = 0; i < pastedCode.length; i++) {
-                if (i + index < 6) {
-                    newDigits[i + index] = pastedCode[i];
+            // Clear all digits first
+            for (let i = 0; i < 6; i++) {
+                newDigits[i] = "";
+            }
+
+            // Fill with pasted code
+            for (let i = 0; i < pastedCode.length && i < 6; i++) {
+                if (/^\d$/.test(pastedCode[i])) { // Only allow numbers
+                    newDigits[i] = pastedCode[i];
                 }
             }
 
             setCodeDigits(newDigits);
             setValue("code", newDigits.join(""));
+
+            // Focus on the next empty field or last field if all filled
+            const nextEmptyIndex = newDigits.findIndex(digit => digit === "");
+            if (nextEmptyIndex !== -1) {
+                setFocusedIndex(nextEmptyIndex);
+            } else {
+                setFocusedIndex(5); // Focus last field if all filled
+            }
         } else {
-            // Handle single digit input
-            const newDigits = [...codeDigits];
-            newDigits[index] = text;
-            setCodeDigits(newDigits);
-            setValue("code", newDigits.join(""));
+            // Handle single digit input for manual typing
+            if (text === "" || /^\d$/.test(text)) { // Only allow empty string or single digit
+                const newDigits = [...codeDigits];
+                newDigits[index] = text;
+                setCodeDigits(newDigits);
+                setValue("code", newDigits.join(""));
+
+                // Auto-focus next input when typing (not when clearing)
+                if (text !== "" && index < 5) {
+                    setFocusedIndex(index + 1);
+                    // Small delay to ensure state updates before focusing
+                    setTimeout(() => {
+                        if (codeInputRefs.current[index + 1]) {
+                            codeInputRefs.current[index + 1].focus();
+                        }
+                    }, 10);
+                }
+            }
         }
     };
 
     const handleKeyPress = (e: any, index: number) => {
-        // Handle backspace
-        if (
-            e.nativeEvent.key === "Backspace" &&
-            index > 0 &&
-            codeDigits[index] === ""
-        ) {
-            const newDigits = [...codeDigits];
-            newDigits[index - 1] = "";
-            setCodeDigits(newDigits);
-            setValue("code", newDigits.join(""));
+        // Handle backspace navigation
+        if (e.nativeEvent.key === "Backspace") {
+            if (codeDigits[index] === "") {
+                // If current field is empty and backspace is pressed, go to previous field
+                if (index > 0) {
+                    const newDigits = [...codeDigits];
+                    newDigits[index - 1] = "";
+                    setCodeDigits(newDigits);
+                    setValue("code", newDigits.join(""));
+                    setFocusedIndex(index - 1);
+                    // Focus previous input
+                    setTimeout(() => {
+                        if (codeInputRefs.current[index - 1]) {
+                            codeInputRefs.current[index - 1].focus();
+                        }
+                    }, 10);
+                }
+            }
+            // If current field has content, it will be cleared by onChangeText
         }
     };
 
@@ -164,6 +201,13 @@ const VerifyResetCodeScreen = () => {
                 // Clear current code
                 setCodeDigits(["", "", "", "", "", ""]);
                 setValue("code", "");
+                setFocusedIndex(0);
+                // Focus first input after clearing
+                setTimeout(() => {
+                    if (codeInputRefs.current[0]) {
+                        codeInputRefs.current[0].focus();
+                    }
+                }, 100);
             } else {
                 Alert.alert("Error", result.message);
             }
@@ -220,6 +264,7 @@ const VerifyResetCodeScreen = () => {
                             error={errors.code?.message}
                             focusedIndex={focusedIndex || undefined}
                             editable={!isLoading}
+                            inputRefs={codeInputRefs}
                         />
 
                         <AuthButton
