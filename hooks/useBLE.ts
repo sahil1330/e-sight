@@ -6,7 +6,7 @@ import { Buffer } from "buffer";
 import * as ExpoDevice from "expo-device";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
+import { AppState, AppStateStatus, PermissionsAndroid, Platform, Alert } from "react-native";
 import { BleError, BleManager, Characteristic, Device, Subscription } from "react-native-ble-plx";
 import BackgroundBLEService from "../utils/BackgroundBLEService";
 
@@ -30,6 +30,7 @@ interface BLEAPI {
     isBackgroundServiceActive: boolean;
     startBackgroundService(): Promise<boolean>;
     stopBackgroundService(): Promise<boolean>;
+    checkBluetoothState(): Promise<string>;
 }
 
 function useBLE(): BLEAPI {
@@ -65,22 +66,6 @@ function useBLE(): BLEAPI {
 
         initializeBackgroundService();
     }, [backgroundService]);
-
-    // Monitor app state changes to check connection when app comes to foreground
-    const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
-        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-            // App came to foreground - check connection health
-            if (connectedDevice && connectionState === 'connected') {
-                checkConnectionHealth();
-            }
-        }
-        appState.current = nextAppState;
-    }, [connectedDevice, connectionState]);
-
-    useEffect(() => {
-        const subscription = AppState.addEventListener('change', handleAppStateChange);
-        return () => subscription?.remove();
-    }, [handleAppStateChange]);
 
     // Background service control functions
     const startBackgroundService = useCallback(async (): Promise<boolean> => {
@@ -140,6 +125,22 @@ function useBLE(): BLEAPI {
             setConnectionState('disconnected');
         }
     }, [connectedDevice, connectionState]);
+
+    // Monitor app state changes to check connection when app comes to foreground
+    const handleAppStateChange = useCallback((nextAppState: AppStateStatus) => {
+        if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+            // App came to foreground - check connection health
+            if (connectedDevice && connectionState === 'connected') {
+                checkConnectionHealth();
+            }
+        }
+        appState.current = nextAppState;
+    }, [connectedDevice, connectionState, checkConnectionHealth]);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+        return () => subscription?.remove();
+    }, [handleAppStateChange]);
 
     // Set up connection monitoring when device connects
     useEffect(() => {
@@ -277,6 +278,16 @@ function useBLE(): BLEAPI {
         }
     }
 
+    // Check Bluetooth state
+    const checkBluetoothState = useCallback(async (): Promise<string> => {
+        return new Promise((resolve) => {
+            const subscription = bleManager.onStateChange((state) => {
+                subscription.remove();
+                resolve(state);
+            }, true);
+        });
+    }, [bleManager]);
+
     const isDuplicateDevice = (devices: Device[], nextDevice: Device) => {
         return devices.findIndex(device => nextDevice.id === device.id) >= 0;
     };
@@ -290,6 +301,41 @@ function useBLE(): BLEAPI {
         const permissionsGranted = await requestPermissions();
         if (!permissionsGranted) {
             console.log("Bluetooth permissions not granted");
+            Alert.alert(
+                "Permissions Required",
+                "Bluetooth and location permissions are required to scan for devices. Please enable them in your device settings.",
+                [{ text: "OK" }]
+            );
+            return;
+        }
+
+        // Check Bluetooth state before scanning
+        const bluetoothState = await checkBluetoothState();
+        if (bluetoothState !== 'PoweredOn') {
+            console.log("Bluetooth is not enabled. Current state:", bluetoothState);
+            
+            let message = "Please enable Bluetooth to scan for devices.";
+            if (bluetoothState === 'PoweredOff') {
+                message = "Bluetooth is turned off. Please enable Bluetooth in your device settings to scan for devices.";
+            } else if (bluetoothState === 'Unauthorized') {
+                message = "Bluetooth access is not authorized. Please allow Bluetooth permissions in your device settings.";
+            } else if (bluetoothState === 'Unsupported') {
+                message = "Bluetooth Low Energy is not supported on this device.";
+            }
+
+            Alert.alert(
+                "Bluetooth Required", 
+                message,
+                [
+                    { 
+                        text: "OK",
+                        onPress: () => {
+                            // Don't start scanning if Bluetooth is not available
+                            setIsScanning(false);
+                        }
+                    }
+                ]
+            );
             return;
         }
 
@@ -304,6 +350,21 @@ function useBLE(): BLEAPI {
                 if (error) {
                     console.error("Error during device scan:", error);
                     setIsScanning(false);
+                    
+                    // Handle specific Bluetooth errors
+                    if (error.errorCode === 102) { // Bluetooth is off
+                        Alert.alert(
+                            "Bluetooth Disabled",
+                            "Bluetooth was turned off during scanning. Please enable Bluetooth and try again.",
+                            [{ text: "OK" }]
+                        );
+                    } else {
+                        Alert.alert(
+                            "Scan Error",
+                            `Failed to scan for devices: ${error.message}`,
+                            [{ text: "OK" }]
+                        );
+                    }
                     return;
                 }
                 if (device && device.name) { // Only add devices with names
@@ -589,7 +650,8 @@ function useBLE(): BLEAPI {
         checkConnectionHealth,
         isBackgroundServiceActive,
         startBackgroundService,
-        stopBackgroundService
+        stopBackgroundService,
+        checkBluetoothState
     };
 }
 

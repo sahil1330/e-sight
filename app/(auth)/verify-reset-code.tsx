@@ -1,7 +1,7 @@
 import AuthButton from '@/components/ui/AuthButton';
 import AuthHeader from '@/components/ui/AuthHeader';
 import CodeInput from '@/components/ui/CodeInput';
-import { verifyCodeSchema, VerifyCodeFormData } from '@/schema/forgotPasswordSchema';
+import { VerifyCodeFormData, verifyCodeSchema } from '@/schema/forgotPasswordSchema';
 import axiosInstance from '@/utils/axiosInstance';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { zodResolver } from '@hookform/resolvers/zod';

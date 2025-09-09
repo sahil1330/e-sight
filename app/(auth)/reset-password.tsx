@@ -1,7 +1,7 @@
 import AuthButton from '@/components/ui/AuthButton';
 import AuthHeader from '@/components/ui/AuthHeader';
 import AuthInputField from '@/components/ui/AuthInputField';
-import { resetPasswordSchema, ResetPasswordFormData } from '@/schema/forgotPasswordSchema';
+import { ResetPasswordFormData, resetPasswordSchema } from '@/schema/forgotPasswordSchema';
 import axiosInstance from '@/utils/axiosInstance';
 import { getErrorMessage } from '@/utils/getErrorMessage';
 import { zodResolver } from '@hookform/resolvers/zod';
