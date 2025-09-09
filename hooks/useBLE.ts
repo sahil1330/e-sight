@@ -6,7 +6,7 @@ import { Buffer } from "buffer";
 import * as ExpoDevice from "expo-device";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, AppStateStatus, PermissionsAndroid, Platform, Alert } from "react-native";
+import { Alert, AppState, AppStateStatus, PermissionsAndroid, Platform } from "react-native";
 import { BleError, BleManager, Characteristic, Device, Subscription } from "react-native-ble-plx";
 import BackgroundBLEService from "../utils/BackgroundBLEService";
 
