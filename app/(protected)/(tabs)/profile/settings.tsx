@@ -36,7 +36,6 @@ export default function SettingsScreen() {
 
     // Here you would typically call an API to update user settings
     await SecureStore.setItemAsync(key, JSON.stringify(value))
-    console.log(`Setting ${key} updated to ${value}`);
   };
 
   const handleExport = async () => {

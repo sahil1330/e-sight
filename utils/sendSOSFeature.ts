@@ -13,7 +13,6 @@ export async function sendSOS(userDetails: User, location: { latitude: number, l
             message: "I need help!, Please try to contact me.",
         })
         if (response.status === 200) {
-            console.log("SOS message sent successfully");
             return response.data.message || "SOS message sent successfully";
         } else {
             console.error("Failed to send SOS message", response.data);

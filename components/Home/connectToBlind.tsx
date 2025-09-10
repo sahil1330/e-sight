@@ -20,12 +20,9 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
 
   const handleBarCodeScanned = ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
-    console.log(`QR code scanned! Type: ${type} Data: ${data}`);
 
     try {
       // Parse the QR code data (assuming it contains user info as JSON
-      console.log("Blind user ID:", data);
-
       Alert.alert(
         "QR Code Scanned",
         `Connect with user ID ${data}?`,
@@ -56,9 +53,6 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
 
   const handleConnectBlindUser = async (blindUserId: string) => {
     try {
-      // Add your API call here to connect to blind user
-      console.log("Connecting to blind user:", blindUserId);
-
       const response = await axiosInstance.post("/user-connections", {
         blindId: blindUserId,
         caretakerId: userDetails._id,
@@ -67,10 +61,7 @@ const ConnectToBlind: React.FC<ConnectToBlindProps> = ({ userDetails }) => {
       if (response.status !== 201) {
         throw new Error("Failed to connect to user");
       }
-
-      console.log("Connection response:", response.data);
       const { blind, caretaker } = response.data.data;
-      console.log("Connected to blind user:", blind, "by caretaker:", caretaker);
       // Update connected users in auth context
 
       if (!blind || !caretaker) {

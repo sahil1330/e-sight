@@ -1,14 +1,10 @@
-import { useAuth } from "@/context/AuthContext";
 import { Stack } from "expo-router";
 import React from "react";
 
 const AuthLayout = () => {
-  const { authState, isReady } = useAuth();
   // if (authState?.authenticated) {
   //   return <Redirect href={"/(protected)/(tabs)"} />;
-  // }
-  console.log("Is Ready ", isReady);
-  console.log("Is Logged In ", authState?.authenticated);
+  // 
   return (
     <Stack initialRouteName="sign-in" screenOptions={{ headerShown: false }}>
       <Stack.Screen

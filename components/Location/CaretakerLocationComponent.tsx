@@ -37,7 +37,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
         longitudeDelta: 0.0421,
       };
 
-      console.log("Manual refresh triggered:", refreshRegion);
       setMapKey(prev => prev + 1);
       setRegion(refreshRegion);
       setMapLoaded(false);
@@ -73,7 +72,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
       );
 
       const locationsData = await Promise.all(responses);
-      console.log("Fetched locations:", locationsData);
 
       // Set all locations at once instead of incrementally
       setLocations(locationsData);
@@ -89,7 +87,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
 
   // Refetch function to get fresh location data from API
   const refetchLocations = useCallback(async () => {
-    console.log("Refetching locations...");
     await fetchAllBlindUsersLocations();
   }, [fetchAllBlindUsersLocations]);
 
@@ -114,7 +111,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
       const timeoutId = setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.animateToRegion(newRegion, 1000);
-          console.log("Animated to new region:", newRegion);
         }
       }, 500);
 
@@ -142,7 +138,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
   // Handle tab focus to ensure map shows correct region when returning to this tab
   useFocusEffect(
     useCallback(() => {
-      console.log("Screen focused, locations:", locations);
       // When this screen comes into focus, force map remount and reset region
       if (locations && locations.length > 0) {
         const focusRegion = {
@@ -151,8 +146,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         };
-
-        console.log("Screen focused, resetting map region:", focusRegion);
 
         // Force map remount by changing key
         setMapKey(prev => prev + 1);
@@ -168,10 +161,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
       }
     }, [locations])
   );
-
-  console.log("MapLoaded:", mapLoaded);
-  console.log("Locations:", locations);
-  console.log("Current Region:", region);
 
   return (
     <View className="container h-full bg-white">
@@ -190,7 +179,6 @@ const CaretakerLocationComponent = ({ userDetails }: { userDetails: User }) => {
           style={styles.map}
           onMapReady={() => {
             setMapLoaded(true);
-            console.log("Map is ready with key:", mapKey);
           }}
           initialRegion={region} // Use initialRegion with key-based remounting
           className="rounded-xl"

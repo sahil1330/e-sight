@@ -31,9 +31,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     (roomId: string) => {
       if (socket) {
         socket.emit("joinRoom", roomId);
-        console.log(`Joined room: ${roomId}`);
+        // console.log(`Joined room: ${roomId}`);
       } else {
-        console.error("Socket is not initialized");
+        // console.error("Socket is not initialized");
       }
     },
     [socket]
@@ -43,9 +43,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     (roomId: string) => {
       if (socket) {
         socket.emit("leaveRoom", roomId);
-        console.log(`Left room: ${roomId}`);
+        // console.log(`Left room: ${roomId}`);
       } else {
-        console.error("Socket is not initialized");
+        // console.error("Socket is not initialized");
       }
     },
     [socket]
@@ -72,13 +72,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
     setSocket(_socket);
     _socket.on("connect", () => {
-      console.log("Socket connected:", _socket.id);
+      // console.log("Socket connected:", _socket.id);
     });
 
     return () => {
       if (_socket) {
         _socket.disconnect();
-        console.log("Socket disconnected");
+        // console.log("Socket disconnected");
       }
       setSocket(undefined);
     };

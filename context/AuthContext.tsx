@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: any) => {
           });
         }
       } catch (error) {
-        console.log("Error while getting auth from secure store", error);
+        // console.error("Error while getting auth from secure store", error);
       } finally {
         setIsReady(true);
       }
@@ -114,10 +114,6 @@ export const AuthProvider = ({ children }: any) => {
         phone,
         role,
       });
-      console.log(
-        "file: AuthContext.tsx, line 93: register: response ",
-        response.data
-      );
       if (!response) {
         return { isError: true, message: "No response from server" };
       }
@@ -136,10 +132,6 @@ export const AuthProvider = ({ children }: any) => {
 
   const login = async (identifier: string, password: string) => {
     try {
-      console.log(
-        "file: AuthContext.tsx, line 110: login: identifier ",
-        identifier
-      );
       const result = await axiosInstance.post("/users/login", {
         identifier,
         password,
@@ -196,11 +188,6 @@ export const AuthProvider = ({ children }: any) => {
         code,
       });
 
-      console.log(
-        "file: AuthContext.tsx, line 174: verifyEmail: result ",
-        result.data
-      );
-
       if (!result) {
         return { isError: true, message: "No response from server" };
       }
@@ -236,7 +223,6 @@ export const AuthProvider = ({ children }: any) => {
           throw new Error("User details not found in auth state");
         }
         prev.userDetails.connectedUsers?.push(connectedUser);
-        console.log("Updated connected users in auth context:", prev.userDetails.connectedUsers);
 
         return {
           ...prev,

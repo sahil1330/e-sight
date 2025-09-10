@@ -66,9 +66,6 @@ export default function EditProfileScreen() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Here you would update the profile via API
-      console.log("Profile update data:", data);
-
       Alert.alert("Success", "Your profile has been updated successfully!", [
         { text: "OK", onPress: () => router.back() }
       ]);

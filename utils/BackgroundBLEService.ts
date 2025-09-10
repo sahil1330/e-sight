@@ -36,7 +36,6 @@ class BackgroundBLEService {
         // Define background BLE monitoring task
         TaskManager.defineTask(BLE_BACKGROUND_TASK, async () => {
             try {
-                console.log('Background BLE task executing...');
                 await this.performBackgroundBLECheck();
                 return { success: true };
             } catch (error) {
@@ -48,7 +47,6 @@ class BackgroundBLEService {
         // Define connection monitoring task
         TaskManager.defineTask(BLE_CONNECTION_MONITOR_TASK, async () => {
             try {
-                console.log('Connection monitor task executing...');
                 await this.monitorActiveConnection();
                 return { success: true };
             } catch (error) {
@@ -87,8 +85,6 @@ class BackgroundBLEService {
             this.isServiceActive = true;
             connectionMonitoringActive = true;
 
-            console.log('Background BLE service started successfully');
-
             // Notify user
             await Notifications.scheduleNotificationAsync({
                 content: {
@@ -121,7 +117,6 @@ class BackgroundBLEService {
 
             currentConnectedDevice = null;
 
-            console.log('Background BLE service stopped successfully');
             return true;
         } catch (error) {
             console.error('Failed to stop background BLE service:', error);
@@ -142,7 +137,6 @@ class BackgroundBLEService {
             await this.monitorActiveConnection();
         }, 10000);
 
-        console.log('Started intensive background BLE monitoring');
     }
 
     private stopBackgroundMonitoring() {
@@ -156,18 +150,15 @@ class BackgroundBLEService {
             this.healthCheckInterval = null;
         }
 
-        console.log('Stopped intensive background BLE monitoring');
     }
 
     async setConnectedDevice(device: Device | null) {
         currentConnectedDevice = device;
 
         if (device && backgroundBleManager) {
-            console.log('Setting up background disconnect monitoring for:', device.name);
 
             // Set up disconnect monitoring in background
             backgroundBleManager.onDeviceDisconnected(device.id, async (error, disconnectedDevice) => {
-                console.log('Background: Device disconnected', disconnectedDevice?.name);
 
                 currentConnectedDevice = null;
 
@@ -200,7 +191,6 @@ class BackgroundBLEService {
         if (!backgroundBleManager) return;
 
         try {
-            console.log('Performing background BLE check...');
 
             // Check if previously connected devices are available
             const previousDevicesData = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
@@ -217,7 +207,6 @@ class BackgroundBLEService {
                 const stateSubscription = backgroundBleManager!.onStateChange((state) => {
                     if (state === 'PoweredOn' && !isScanning) {
                         isScanning = true;
-                        console.log('Background: Starting BLE scan...');
 
                         backgroundBleManager!.startDeviceScan(null, null, (error, device) => {
                             if (error || !device) return;
@@ -229,7 +218,6 @@ class BackgroundBLEService {
 
                             if (wasPreviouslyConnected && device.name) {
                                 availableDevices.push(device);
-                                console.log('Background: Previously connected device found:', device.name);
                             }
                         });
 
@@ -237,7 +225,6 @@ class BackgroundBLEService {
                         scanTimeout = setTimeout(async () => {
                             try {
                                 await backgroundBleManager!.stopDeviceScan();
-                                console.log('Background: Scan stopped');
                             } catch (error) {
                                 console.error('Error stopping background scan:', error);
                             }
@@ -330,8 +317,6 @@ class BackgroundBLEService {
             const isConnected = await currentConnectedDevice.isConnected();
 
             if (!isConnected) {
-                console.log('Background: Connection health check failed');
-
                 await Notifications.scheduleNotificationAsync({
                     content: {
                         title: 'Connection Lost',

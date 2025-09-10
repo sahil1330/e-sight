@@ -80,7 +80,6 @@ export default function PasswordScreen() {
         oldPassword: data.currentPassword,
         newPassword: data.newPassword,
       });
-      console.log("Password change response:", response.data);
       if (response.status !== 200) {
         setError(response.data.error);
         throw new Error("Failed to change password");

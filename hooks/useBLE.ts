@@ -89,8 +89,6 @@ function useBLE(): BLEAPI {
             const isConnected = await connectedDevice.isConnected();
 
             if (!isConnected) {
-                console.log('Device health check failed - device disconnected');
-
                 // Add disconnection notification
                 await addDeviceNotification(
                     connectedDevice.name || "Unknown Device",
@@ -110,8 +108,6 @@ function useBLE(): BLEAPI {
                 }
             }
         } catch (error) {
-            console.log('Connection health check error:', error);
-
             // Device is likely disconnected due to error
             await addDeviceNotification(
                 connectedDevice.name || "Unknown Device",
@@ -157,8 +153,6 @@ function useBLE(): BLEAPI {
             return;
         }
 
-        console.log('Setting up connection monitoring for:', connectedDevice.name);
-
         // Update background service with connected device
         backgroundService.setConnectedDevice(connectedDevice);
 
@@ -167,9 +161,9 @@ function useBLE(): BLEAPI {
             connectedDevice.id,
             async (error, device) => {
                 if (error) {
-                    console.log('Device disconnected with error:', error);
+                    // console.log('Device disconnected with error:', error);
                 } else {
-                    console.log('Device disconnected:', device?.name || 'Unknown Device');
+                    // console.log('Device disconnected:', device?.name || 'Unknown Device');
                 }
 
                 // Update state immediately when device disconnects
@@ -300,7 +294,6 @@ function useBLE(): BLEAPI {
     const scanForPeripherals = async () => {
         const permissionsGranted = await requestPermissions();
         if (!permissionsGranted) {
-            console.log("Bluetooth permissions not granted");
             Alert.alert(
                 "Permissions Required",
                 "Bluetooth and location permissions are required to scan for devices. Please enable them in your device settings.",
@@ -312,8 +305,7 @@ function useBLE(): BLEAPI {
         // Check Bluetooth state before scanning
         const bluetoothState = await checkBluetoothState();
         if (bluetoothState !== 'PoweredOn') {
-            console.log("Bluetooth is not enabled. Current state:", bluetoothState);
-            
+
             let message = "Please enable Bluetooth to scan for devices.";
             if (bluetoothState === 'PoweredOff') {
                 message = "Bluetooth is turned off. Please enable Bluetooth in your device settings to scan for devices.";
@@ -324,10 +316,10 @@ function useBLE(): BLEAPI {
             }
 
             Alert.alert(
-                "Bluetooth Required", 
+                "Bluetooth Required",
                 message,
                 [
-                    { 
+                    {
                         text: "OK",
                         onPress: () => {
                             // Don't start scanning if Bluetooth is not available
@@ -350,7 +342,7 @@ function useBLE(): BLEAPI {
                 if (error) {
                     console.error("Error during device scan:", error);
                     setIsScanning(false);
-                    
+
                     // Handle specific Bluetooth errors
                     if (error.errorCode === 102) { // Bluetooth is off
                         Alert.alert(
@@ -370,19 +362,15 @@ function useBLE(): BLEAPI {
                 if (device && device.name) { // Only add devices with names
                     registeredDevices.map(async (registeredDevice) => {
                         if (device.name === registeredDevice.model) {
-                            console.log("Registered device found:", device.name);
-                            console.log("Device ID:", device.id);
                             const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
                             const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
                             if (prevDevicesArray.some((prevDevice: Device) => prevDevice.id === device.id)) {
-                                console.log("Previously connected device found:", device.name);
                                 stopScan();
                                 connectToDevice(device);
                                 return;
                             }
                             setAllDevices(prevDevices => {
                                 if (!isDuplicateDevice(prevDevices, device)) {
-                                    console.log("Discovered device:", device.name);
                                     return [...prevDevices, device];
                                 }
                                 return prevDevices;
@@ -404,7 +392,6 @@ function useBLE(): BLEAPI {
     const connectToDevice = async (device: Device) => {
         try {
             if (connectedDevice && connectedDevice.id === device.id) {
-                console.log("Already connected to this device:", device.name || "Unnamed Device");
                 return;
             }
 
@@ -464,11 +451,8 @@ function useBLE(): BLEAPI {
             if (!prevDevicesArray.some((prevDevice: Device) => prevDevice.id === deviceConnection.id)) {
                 prevDevicesArray.push(deviceConnection);
                 await SecureStore.deleteItemAsync(PREVIOUS_DEVICES);
-                console.log("Adding device to SecureStore:", deviceConnection.name || "Unnamed Device");
                 await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(prevDevicesArray));
             }
-            console.log("Devices stored in SecureStore:", await SecureStore.getItemAsync(PREVIOUS_DEVICES));
-
             await deviceConnection.discoverAllServicesAndCharacteristics();
             try {
                 await deviceConnection.requestMTU(512);
@@ -477,16 +461,10 @@ function useBLE(): BLEAPI {
             }
 
             const services = await deviceConnection.services();
-            console.log("Connected to device:", device.name || "Unnamed Device");
-            console.log("Services found:", services.length);
 
             if (services.length > 0) {
                 const characteristics = await deviceConnection.characteristicsForService(services[2].uuid);
-                console.log("Characteristics found:", characteristics.length);
-                console.log("Characteristics found:", characteristics.map(c => c.uuid));
-                console.log("Characteristics Services found:", characteristics.map(c => c.serviceUUID));
                 const writeCharacteristic = characteristics.find(c => c.isWritableWithResponse || c.isWritableWithoutResponse);
-                console.log("Write characteristic found:", JSON.stringify(writeCharacteristic?.uuid));
                 setCharacteristic(writeCharacteristic || null);
                 if (writeCharacteristic) {
                     startStreamingData(deviceConnection, writeCharacteristic);
@@ -523,7 +501,6 @@ function useBLE(): BLEAPI {
         if (connectedDevice) {
             try {
                 await bleManager.cancelDeviceConnection(connectedDevice.id);
-                console.log("Disconnected from device:", connectedDevice.name || "Unnamed Device");
 
                 // Add disconnection notification
                 await addDeviceNotification(
@@ -566,7 +543,6 @@ function useBLE(): BLEAPI {
 
         try {
             const value = (Buffer.from(characteristic.value, 'base64')).toString('utf-8');
-            console.log("Received data:", value);
             setMessages(prevMessages => [...prevMessages, value]);
             if (value === SOSMESSAGE) {
                 const lastLocationDataRaw = await SecureStore.getItemAsync(LAST_LOCATION_TOKEN);
@@ -587,8 +563,6 @@ function useBLE(): BLEAPI {
 
     const startStreamingData = useCallback(async (device: Device, writeCharacteristic: Characteristic | null) => {
         try {
-            console.log("Starting data stream for device:", device.name || "Unnamed Device");
-            console.log("Starting data stream for characteristic:", writeCharacteristic?.uuid);
             if (!writeCharacteristic) {
                 return;
             }
@@ -607,13 +581,9 @@ function useBLE(): BLEAPI {
         try {
             const previousDevices = await SecureStore.getItemAsync(PREVIOUS_DEVICES);
             const prevDevicesArray = previousDevices ? JSON.parse(previousDevices) : [];
-            console.log("Previous Devices Array: ", prevDevicesArray)
             if (connectedDevice) {
                 const updatedDevicesArray = prevDevicesArray.filter((device: Device) => device.id !== connectedDevice.id);
-                console.log("Updated Devices Array: ", updatedDevicesArray)
-                console.log("Setting the devices array in store")
-                const isStoredPromise = await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(updatedDevicesArray))
-                console.log("isStoredPromise ", isStoredPromise)
+                await SecureStore.setItemAsync(PREVIOUS_DEVICES, JSON.stringify(updatedDevicesArray))
                 // Add forget device notification
                 await addDeviceNotification(
                     connectedDevice.name || "Unknown Device",

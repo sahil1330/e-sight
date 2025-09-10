@@ -43,10 +43,8 @@ const ConnectToDevice = () => {
 
   useEffect(() => {
     if (isScanning) {
-      console.log("Scanning for devices...");
       setModalVisible(true);
     } else {
-      console.log("Stopped scanning.");
       if (!isConnecting) {
         setModalVisible(false);
       }
