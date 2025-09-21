@@ -45,13 +45,6 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
   const hasBlindUsers =
     userDetails.connectedUsers && userDetails.connectedUsers.length > 0;
 
-  // Mock data for location status (in a real app, this would come from backend)
-  const getLocationStatus = (userId: string | undefined) => {
-    // This is just for UI demonstration - in real app, use actual data
-    const statuses = ["active", "inactive"];
-    return statuses[Math.floor(Math.random() * statuses.length)];
-  };
-
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
@@ -91,8 +84,8 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
 
       <View className="px-5 mt-5 space-y-5">
         {/* Summary Cards */}
-        <View className="flex-row space-x-4">
-          <View className="bg-white rounded-xl p-5 flex-1 shadow-sm border border-gray-100">
+        <View className="flex-row justify-center">
+          <View className="bg-white rounded-xl p-5 flex-1 shadow-sm border border-gray-100 max-w-sm">
             <View className="flex-row items-center justify-between mb-3">
               <Text className="text-gray-600 text-sm font-semibold">
                 People in Care
@@ -105,24 +98,10 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
               {userDetails.connectedUsers?.length || 0}
             </Text>
           </View>
-
-          <View className="bg-white rounded-xl p-5 flex-1 shadow-sm border border-gray-100">
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-gray-600 text-sm font-semibold">
-                Active Now
-              </Text>
-              <View className="bg-emerald-100 rounded-lg p-2">
-                <Ionicons name="pulse" size={18} color="#10B981" />
-              </View>
-            </View>
-            <Text className="text-gray-900 text-2xl font-bold">
-              {userDetails.connectedUsers?.filter(() => Math.random() > 0.5).length || 0}
-            </Text>
-          </View>
         </View>
 
         {/* People Under Care */}
-        <View className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <View className="bg-white rounded-xl p-5 my-4 shadow-sm border border-gray-100">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-gray-900 text-lg font-bold">
               People Under Care
@@ -141,7 +120,6 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
           {hasBlindUsers ? (
             <View className="space-y-3">
               {userDetails.connectedUsers?.map((blindUser, index) => {
-                const status = getLocationStatus(blindUser._id);
                 return (
                   <TouchableOpacity
                     key={blindUser._id}
@@ -162,12 +140,6 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
                       <Text className="text-gray-500 text-sm mt-0.5">
                         {blindUser.email}
                       </Text>
-                      <View className="flex-row items-center mt-2">
-                        <View className={`h-2.5 w-2.5 rounded-full ${status === "active" ? "bg-emerald-500" : "bg-gray-400"} mr-2`} />
-                        <Text className={`text-sm font-medium ${status === "active" ? "text-emerald-600" : "text-gray-500"}`}>
-                          {status === "active" ? "Location Active" : "Offline"}
-                        </Text>
-                      </View>
                     </View>
                     <View className="flex-row items-center space-x-2">
                       <TouchableOpacity

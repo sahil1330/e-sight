@@ -5,16 +5,17 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
-    useWindowDimensions,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
@@ -76,8 +77,6 @@ const SignIn = () => {
           className="flex-1"
           contentContainerStyle={{
             paddingHorizontal: 20,
-            paddingTop: 40,
-            paddingBottom: 40,
             minHeight: '100%',
           }}
           showsVerticalScrollIndicator={false}
@@ -85,8 +84,15 @@ const SignIn = () => {
         >
           {/* Header Section */}
           <View className="items-center mb-10">
-            <View className="bg-blue-600 w-20 h-20 rounded-full items-center justify-center mb-6">
-              <Text className="text-white text-2xl font-bold">E</Text>
+            <View className="w-40 h-40 rounded-full items-center justify-center mb-6">
+              {/* <Text className="text-white text-2xl font-bold">E</Text> */}
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={{ resizeMode: 'contain' }}
+                accessible
+                accessibilityLabel="App logo"
+                className="w-32 h-32 rounded-full"
+              />
             </View>
             <Text
               style={{ fontSize: headerFontSize }}

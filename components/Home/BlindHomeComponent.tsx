@@ -266,7 +266,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           </Text>
 
           <TouchableOpacity
-            className={`py-3 px-6 rounded-lg flex-row items-center justify-center shadow-sm border ${isTracking ? 'bg-red-600 border-red-700' : 'bg-emerald-600 border-emerald-700'
+            className={`py-6 px-10 rounded-lg flex-row items-center justify-center shadow-sm border ${isTracking ? 'bg-red-600 border-red-700' : 'bg-emerald-600 border-emerald-700'
               }`}
             onPress={handleToggleTracking}
             accessibilityRole="button"
@@ -275,17 +275,17 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           >
             <Ionicons
               name={isTracking ? "stop-circle" : "play-circle"}
-              size={20}
+              size={30}
               color="white"
             />
-            <Text className="text-white text-base font-semibold ml-3">
+            <Text className="text-white text-2xl font-semibold ml-3">
               {isTracking ? "Stop Tracking" : "Start Tracking"}
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Device Connection - Professional design */}
-        <View className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
+        <View className="bg-white rounded-xl p-6 my-4 shadow-md border border-gray-200">
           <Text
             className="text-lg font-semibold text-slate-800 mb-4"
             accessibilityRole="header"
@@ -361,7 +361,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
 
         {/* Emergency Button - Professional critical design */}
         <TouchableOpacity
-          className="bg-red-600 py-4 rounded-xl shadow-lg border border-red-700"
+          className="bg-red-600 py-4 my-4 rounded-xl shadow-lg border border-red-700"
           onPress={handleEmergencyPress}
           accessibilityRole="button"
           accessibilityLabel="Emergency assistance button"

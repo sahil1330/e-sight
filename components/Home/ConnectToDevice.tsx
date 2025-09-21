@@ -420,7 +420,7 @@ const ConnectToDevice = () => {
           </Text>
 
           <TouchableOpacity
-            className="bg-blue-600 px-8 py-4 rounded-xl flex-row items-center"
+            className="bg-blue-600 px-10 py-6 rounded-xl flex-row items-center"
             style={{
               shadowColor: '#000',
               shadowOffset: { width: 0, height: 2 },
@@ -432,8 +432,8 @@ const ConnectToDevice = () => {
             accessibilityRole="button"
             accessibilityLabel="Scan for devices"
           >
-            <Ionicons name="search" size={20} color="white" />
-            <Text className="text-white font-semibold text-base ml-2">
+            <Ionicons name="search" size={30} color="white" />
+            <Text className="text-white font-semibold text-2xl ml-2">
               Scan for Devices
             </Text>
           </TouchableOpacity>

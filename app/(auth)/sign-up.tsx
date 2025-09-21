@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -101,16 +102,21 @@ const SignUp = () => {
           className="flex-1"
           contentContainerStyle={{
             paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom: 40,
           }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
           {/* Header Section */}
           <View className="items-center mb-8">
-            <View className="bg-blue-600 w-20 h-20 rounded-full items-center justify-center mb-6">
-              <Text className="text-white text-2xl font-bold">E</Text>
+            <View className="w-40 h-40 rounded-full items-center justify-center mb-6">
+              {/* <Text className="text-white text-2xl font-bold">E</Text> */}
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={{ resizeMode: 'contain' }}
+                accessible
+                accessibilityLabel="App logo"
+                className="w-32 h-32 rounded-full"
+              />
             </View>
             <Text
               style={{ fontSize: headerFontSize }}
@@ -137,10 +143,10 @@ const SignUp = () => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className={`border-2 rounded-xl px-4 py-4 text-base ${errors.fullName
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "fullName"
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white"
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "fullName"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
                         }`}
                       style={{
                         fontSize,
@@ -184,10 +190,10 @@ const SignUp = () => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className={`border-2 rounded-xl px-4 py-4 text-base ${errors.email
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "email"
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white"
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "email"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
                         }`}
                       style={{
                         fontSize,
@@ -233,10 +239,10 @@ const SignUp = () => {
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
                       className={`border-2 rounded-xl px-4 py-4 text-base ${errors.phone
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "phone"
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 bg-white"
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "phone"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white"
                         }`}
                       style={{
                         fontSize,
@@ -282,10 +288,10 @@ const SignUp = () => {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
                         className={`border-2 rounded-xl px-4 py-4 pr-16 text-black ${errors.password
-                            ? "border-red-500 bg-red-50"
-                            : focusedField === "password"
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 bg-white"
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === "password"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
                           }`}
                         style={{
                           fontSize,
@@ -343,10 +349,10 @@ const SignUp = () => {
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
                         className={`border-2 rounded-xl px-4 py-4 pr-16 text-black ${errors.confirmPassword
-                            ? "border-red-500 bg-red-50"
-                            : focusedField === "confirmPassword"
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 bg-white"
+                          ? "border-red-500 bg-red-50"
+                          : focusedField === "confirmPassword"
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
                           }`}
                         style={{
                           fontSize,
@@ -405,8 +411,8 @@ const SignUp = () => {
                       <TouchableOpacity
                         onPress={() => onChange("blind")}
                         className={`border-2 rounded-xl p-4 ${value === "blind"
-                            ? "bg-blue-50 border-blue-500"
-                            : "bg-white border-gray-200"
+                          ? "bg-blue-50 border-blue-500"
+                          : "bg-white border-gray-200"
                           }`}
                         style={{
                           minHeight: 64,
@@ -424,8 +430,8 @@ const SignUp = () => {
                         <View className="flex-row items-center">
                           <View
                             className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${value === "blind"
-                                ? "border-blue-500"
-                                : "border-gray-400"
+                              ? "border-blue-500"
+                              : "border-gray-400"
                               }`}
                           >
                             {value === "blind" && (
@@ -435,8 +441,8 @@ const SignUp = () => {
                           <View className="flex-1">
                             <Text
                               className={`font-semibold text-lg ${value === "blind"
-                                  ? "text-blue-600"
-                                  : "text-gray-800"
+                                ? "text-blue-600"
+                                : "text-gray-800"
                                 }`}
                             >
                               Blind User
@@ -451,8 +457,8 @@ const SignUp = () => {
                       <TouchableOpacity
                         onPress={() => onChange("caretaker")}
                         className={`border-2 rounded-xl p-4 ${value === "caretaker"
-                            ? "bg-blue-50 border-blue-500"
-                            : "bg-white border-gray-200"
+                          ? "bg-blue-50 border-blue-500"
+                          : "bg-white border-gray-200"
                           }`}
                         style={{
                           minHeight: 64,
@@ -470,8 +476,8 @@ const SignUp = () => {
                         <View className="flex-row items-center">
                           <View
                             className={`h-6 w-6 rounded-full border-2 mr-4 items-center justify-center ${value === "caretaker"
-                                ? "border-blue-500"
-                                : "border-gray-400"
+                              ? "border-blue-500"
+                              : "border-gray-400"
                               }`}
                           >
                             {value === "caretaker" && (
@@ -481,8 +487,8 @@ const SignUp = () => {
                           <View className="flex-1">
                             <Text
                               className={`font-semibold text-lg ${value === "caretaker"
-                                  ? "text-blue-600"
-                                  : "text-gray-800"
+                                ? "text-blue-600"
+                                : "text-gray-800"
                                 }`}
                             >
                               Caretaker
@@ -529,12 +535,11 @@ const SignUp = () => {
           </View>
 
           {/* Footer */}
-          <View className="flex-row justify-center mt-8">
+          <View className="flex-row justify-center mt-8 mb-6">
             <Text className="text-gray-600 text-base">Already have an account? </Text>
             <TouchableOpacity
               onPress={() => router.push("/(auth)/sign-in")}
               style={{ minHeight: 44 }}
-              className="py-2"
               accessibilityRole="button"
               accessibilityLabel="Navigate to sign in"
             >

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
+
 
 interface AuthHeaderProps {
     title: string;
@@ -54,8 +55,15 @@ const AuthHeader: React.FC<AuthHeaderProps> = ({
                 </TouchableOpacity>
             )}
 
-            <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 border-4 ${iconBgColor}`}>
-                <Ionicons name={iconName} size={40} color={iconColor} />
+            <View className="w-40 h-40 rounded-full items-center justify-center mb-6">
+              {/* <Text className="text-white text-2xl font-bold">E</Text> */}
+              <Image
+                source={require('../../assets/images/icon.png')}
+                style={{ resizeMode: 'contain' }}
+                accessible
+                accessibilityLabel="App logo"
+                className="w-32 h-32 rounded-full"
+              />
             </View>
             
             <Text
