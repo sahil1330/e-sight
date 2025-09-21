@@ -88,7 +88,7 @@ class BackgroundBLEService {
             // Notify user
             await Notifications.scheduleNotificationAsync({
                 content: {
-                    title: 'E-Sight BLE Service',
+                    title: 'E-Kaathi BLE Service',
                     body: 'Bluetooth monitoring is now active',
                     data: { type: 'service_started' },
                 },

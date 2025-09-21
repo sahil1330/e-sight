@@ -106,7 +106,7 @@ class LocationService {
                 distanceInterval: 50, // 50 meters
                 deferredUpdatesInterval: 30000,
                 foregroundService: {
-                    notificationTitle: "E-Sight Location Tracking",
+                    notificationTitle: "E-Kaathi Location Tracking",
                     notificationBody: "Continuously tracking location for safety",
                     notificationColor: "#00FF00",
                     killServiceOnDestroy: false, // Prevent service from being killed

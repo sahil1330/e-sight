@@ -416,7 +416,7 @@ const ConnectToDevice = () => {
             No Device Connected
           </Text>
           <Text className="text-gray-500 text-base text-center mb-6">
-            Connect to your E-Sight navigation device to get started
+            Connect to your E-Kaathi device to get started
           </Text>
 
           <TouchableOpacity

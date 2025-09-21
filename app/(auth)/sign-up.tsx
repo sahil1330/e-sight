@@ -119,7 +119,7 @@ const SignUp = () => {
               Create Account
             </Text>
             <Text className="text-gray-600 text-center text-lg">
-              Join E-Sight to get started with accessibility features
+              Join E-Kaathi to get started with accessibility features
             </Text>
           </View>
 
@@ -519,7 +519,7 @@ const SignUp = () => {
                 activeOpacity={0.8}
                 accessibilityRole="button"
                 accessibilityLabel="Create your account"
-                accessibilityHint="Submit the form to create your new E-Sight account"
+                accessibilityHint="Submit the form to create your new E-Kaathi account"
               >
                 <Text className="text-white font-bold text-lg">
                   {isSubmitting ? "Creating Account..." : "Create Account"}

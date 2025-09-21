@@ -55,7 +55,7 @@ const InAppNotifications = () => {
           Notifications
         </Text>
         <Text className="text-blue-100 text-lg mt-1">
-          Stay updated with your e-sight system
+          Stay updated with your E-Kaathi system
         </Text>
       </View>
 

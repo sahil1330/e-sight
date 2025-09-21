@@ -1,4 +1,4 @@
-# E-Sight UI Redesign Summary
+# E-Kaathi UI Redesign Summary
 
 ## Key Improvements Made
 

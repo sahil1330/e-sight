@@ -95,7 +95,7 @@ const SignIn = () => {
               Welcome Back
             </Text>
             <Text className="text-gray-600 text-center text-lg">
-              Sign in to access your E-Sight account
+              Sign in to access your E-Kaathi account
             </Text>
           </View>
 

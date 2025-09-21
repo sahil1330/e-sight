@@ -67,12 +67,12 @@ const CaretakerHomeComponent = ({ userDetails }: { userDetails: User }) => {
         <Text
           className="text-white text-xl font-bold mb-1"
           accessibilityRole="header"
-          accessibilityLabel={`Welcome to E-Sight Dashboard, ${userDetails.fullName?.split(" ")[0] || "Caretaker"}`}
+          accessibilityLabel={`Welcome to E-Kaathi Dashboard, ${userDetails.fullName?.split(" ")[0] || "Caretaker"}`}
         >
           Welcome, {userDetails.fullName?.split(" ")[0] || "Caretaker"}
         </Text>
         <Text className="text-indigo-100 text-sm font-medium">
-          E-Sight Monitoring Dashboard
+          E-Kaathi Monitoring Dashboard
         </Text>
         <View className="mt-3">
           {isVerified ? (

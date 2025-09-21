@@ -1,5 +1,5 @@
 /**
- * E-Sight App Colors - Designed for maximum accessibility and visibility
+ * E-Kaathi App Colors - Designed for maximum accessibility and visibility
  * High contrast colors optimized for visually impaired users
  * WCAG AAA compliant color combinations
  */

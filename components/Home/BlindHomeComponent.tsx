@@ -212,7 +212,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
-      accessibilityLabel="E-Sight home screen content"
+      accessibilityLabel="E-Kaathi home screen content"
       showsVerticalScrollIndicator={false}
     >
       {/* Welcome Header - Professional enterprise styling */}
@@ -220,12 +220,12 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         <Text
           className="text-white text-2xl font-semibold mb-2"
           accessibilityRole="header"
-          accessibilityLabel={`Welcome to E-Sight, ${userDetails.fullName?.split(" ")[0] || "User"}`}
+          accessibilityLabel={`Welcome to E-Kaathi, ${userDetails.fullName?.split(" ")[0] || "User"}`}
         >
           Welcome, {userDetails.fullName?.split(" ")[0] || "User"}
         </Text>
         <Text className="text-slate-300 text-base font-medium">
-          E-Sight Navigation Assistant
+          E-Kaathi Navigation Assistant
         </Text>
         <View className="flex-row items-center mt-3">
           {userDetails.isVerified ? (
