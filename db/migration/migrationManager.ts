@@ -52,8 +52,6 @@ export class MigrationManager {
     };
     
     try {
-      console.log('🔄 Starting SecureStore to SQLite migration...');
-      
       // Initialize the database
       await initializeDatabase();
       
@@ -65,11 +63,7 @@ export class MigrationManager {
       result.migrated = locationCount + emergencyCount + deviceCount;
       result.success = true;
       
-      console.log(`✅ Migration completed successfully!`);
-      console.log(`📊 Migrated ${result.migrated} notifications total:`);
-      console.log(`   - Location: ${locationCount}`);
-      console.log(`   - Emergency: ${emergencyCount}`);
-      console.log(`   - Device: ${deviceCount}`);
+      // Migration completed successfully
       
     } catch (error) {
       console.error('❌ Migration failed:', error);
@@ -84,7 +78,6 @@ export class MigrationManager {
     try {
       const rawData = await SecureStore.getItemAsync(NOTIFICATION_KEYS.LOCATION);
       if (!rawData) {
-        console.log('📭 No location notifications to migrate');
         return 0;
       }
       
@@ -108,7 +101,6 @@ export class MigrationManager {
         }
       }
       
-      console.log(`✅ Migrated ${migratedCount} location notifications`);
       return migratedCount;
     } catch (error) {
       console.error('❌ Error migrating location notifications:', error);
@@ -121,7 +113,6 @@ export class MigrationManager {
     try {
       const rawData = await SecureStore.getItemAsync(NOTIFICATION_KEYS.EMERGENCY);
       if (!rawData) {
-        console.log('📭 No emergency notifications to migrate');
         return 0;
       }
       
@@ -144,7 +135,6 @@ export class MigrationManager {
         }
       }
       
-      console.log(`✅ Migrated ${migratedCount} emergency notifications`);
       return migratedCount;
     } catch (error) {
       console.error('❌ Error migrating emergency notifications:', error);
@@ -157,7 +147,6 @@ export class MigrationManager {
     try {
       const rawData = await SecureStore.getItemAsync(NOTIFICATION_KEYS.DEVICE);
       if (!rawData) {
-        console.log('📭 No device notifications to migrate');
         return 0;
       }
       
@@ -182,7 +171,6 @@ export class MigrationManager {
         }
       }
       
-      console.log(`✅ Migrated ${migratedCount} device notifications`);
       return migratedCount;
     } catch (error) {
       console.error('❌ Error migrating device notifications:', error);
@@ -210,15 +198,13 @@ export class MigrationManager {
   // Clean up SecureStore data after successful migration
   static async cleanupSecureStore(): Promise<void> {
     try {
-      console.log('🧹 Cleaning up SecureStore data...');
-      
       await Promise.all([
         SecureStore.deleteItemAsync(NOTIFICATION_KEYS.LOCATION).catch(() => {}),
         SecureStore.deleteItemAsync(NOTIFICATION_KEYS.EMERGENCY).catch(() => {}),
         SecureStore.deleteItemAsync(NOTIFICATION_KEYS.DEVICE).catch(() => {}),
       ]);
       
-      console.log('✅ SecureStore cleanup completed');
+      // SecureStore cleanup completed
     } catch (error) {
       console.error('❌ Error cleaning up SecureStore:', error);
     }
@@ -273,7 +259,7 @@ export class MigrationManager {
       // Store backup in SecureStore with a special key
       await SecureStore.setItemAsync('notification_backup', JSON.stringify(backupData));
       
-      console.log('✅ Created backup of SecureStore data');
+      // Created backup of SecureStore data
       return { success: true, backupData };
     } catch (error) {
       console.error('❌ Error creating backup:', error);

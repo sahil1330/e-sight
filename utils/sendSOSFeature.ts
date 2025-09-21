@@ -25,7 +25,7 @@ export async function sendSOS(userDetails: User, location: { latitude: number, l
                 });
                 
                 if (response.status === 200) {
-                    console.log(`SOS message sent successfully to ${caretaker.phone}`);
+                    // SOS message sent successfully
                     return response.data.message || "SOS message sent successfully";
                 } else {
                     console.error(`Failed to send SOS message to ${caretaker.phone}`, response.data);
@@ -48,7 +48,7 @@ export async function sendSOS(userDetails: User, location: { latitude: number, l
                 `SOS partially sent: ${fulfilled.length} successful, ${rejected.length} failed out of ${results.length} caretakers.`
             );
         } else {
-            console.log(`All ${fulfilled.length} SOS messages sent successfully`);
+            // All SOS messages sent successfully
             // Update emergency notification with success status
             await addEmergencyNotification(
                 'sos',

@@ -12,8 +12,6 @@ export const performMigrationIfNeeded = async (): Promise<{
   data?: any;
 }> => {
   try {
-    console.log('🔍 Checking if migration is needed...');
-    
     // Initialize database first
     await initializeDatabase();
     
@@ -21,7 +19,6 @@ export const performMigrationIfNeeded = async (): Promise<{
     const needsMigration = await MigrationManager.isMigrationNeeded();
     
     if (!needsMigration) {
-      console.log('✅ No migration needed - no SecureStore data found');
       return {
         success: true,
         migrationPerformed: false,
@@ -31,7 +28,6 @@ export const performMigrationIfNeeded = async (): Promise<{
     
     // Get migration preview
     const preview = await MigrationManager.getMigrationPreview();
-    console.log('📊 Migration preview:', preview);
     
     // Create backup before migration
     const backup = await MigrationManager.backupSecureStoreData();
@@ -45,7 +41,6 @@ export const performMigrationIfNeeded = async (): Promise<{
     }
     
     // Perform the migration
-    console.log('🚀 Starting migration...');
     const result = await MigrationManager.migrateFromSecureStore();
     
     if (result.success) {
@@ -90,8 +85,6 @@ export const forceMigration = async (): Promise<{
   data?: any;
 }> => {
   try {
-    console.log('🔧 Force migration requested...');
-    
     const preview = await MigrationManager.getMigrationPreview();
     const result = await MigrationManager.migrateFromSecureStore();
     

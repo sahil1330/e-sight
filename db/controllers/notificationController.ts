@@ -57,9 +57,7 @@ export class NotificationController {
   
   // Get notifications by type
   static async getByType(type: 'location' | 'emergency' | 'device'): Promise<Notification[]> {
-    console.log(`🔍 Getting ${type} notifications...`);
     const result = await this.getAll({ type });
-    console.log(`📋 Found ${result.length} ${type} notifications`);
     return result;
   }
   
@@ -136,7 +134,6 @@ export class NotificationController {
       // Implement rolling buffer: keep only the latest notifications per type
       await this.enforceRollingBuffer(notification.type);
       
-      console.log(`✅ Added ${notification.type} notification:`, id);
       return id;
     } catch (error) {
       console.error('❌ Error adding notification:', error);
@@ -238,7 +235,7 @@ export class NotificationController {
           for (const notification of toDelete) {
             await db.delete(notifications).where(eq(notifications.id, notification.id));
           }
-          console.log(`🗑️ Cleaned up ${toDelete.length} old ${type} notifications`);
+          // Cleaned up old notifications
         }
       }
     } catch (error) {
@@ -267,7 +264,6 @@ export class NotificationController {
         .delete(notifications)
         .where(sql`${notifications.timestamp} < ${cutoffDate.getTime()}`);
       
-      console.log(`🧹 Cleaned up ${result.changes} notifications older than ${daysOld} days`);
       return result.changes;
     } catch (error) {
       console.error('❌ Error cleaning up old notifications:', error);

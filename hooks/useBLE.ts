@@ -582,14 +582,13 @@ function useBLE(): BLEAPI {
                     const userDetailsRaw = await SecureStore.getItemAsync(USER_AUTH_STATE);
                     const userData = await JSON.parse(userDetailsRaw as string);
                     
-                    console.log('SOS triggered, sending emergency alerts...');
                     const sosResult = await sendSOS(userData.userDetails, {
                         latitude: lastLocationData.location.latitude,
                         longitude: lastLocationData.location.longitude
                     });
                     
                     if (sosResult.success) {
-                        console.log(`SOS processed successfully: ${sosResult.message}`);
+                        // SOS processed successfully
                     } else {
                         console.error(`SOS processing failed: ${sosResult.message}`);
                     }

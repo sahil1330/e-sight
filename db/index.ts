@@ -12,8 +12,6 @@ export const db = drizzle(expoDb, { schema });
 // Initialize database tables
 export const initializeDatabase = async (): Promise<void> => {
   try {
-    console.log('🗄️ Initializing database...');
-    
     // Create tables using the generated SQL
     // This is a simple approach - tables will be created if they don't exist
     await db.run(sql`CREATE TABLE IF NOT EXISTS notifications (
@@ -67,11 +65,7 @@ export const initializeDatabase = async (): Promise<void> => {
     
     await db.run(sql`CREATE INDEX IF NOT EXISTS idx_user_settings_key ON user_settings (key)`);
     
-    console.log('✅ Database initialized successfully');
-    
-    // Log database stats
-    const stats = await getDatabaseStats();
-    console.log('📊 Database stats:', stats);
+    // Database initialized successfully
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     throw error;
@@ -89,7 +83,7 @@ export const resetDatabase = async (): Promise<void> => {
     // Re-run migrations
     await initializeDatabase();
     
-    console.log('🔄 Database reset successfully');
+    // Database reset successfully
   } catch (error) {
     console.error('❌ Database reset failed:', error);
     throw error;

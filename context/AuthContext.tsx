@@ -66,13 +66,8 @@ export const AuthProvider = ({ children }: any) => {
     const getAuthFromStorage = async () => {
       try {
         // Perform migration from SecureStore to SQLite if needed
-        console.log('🔄 Checking for notification migration...');
-        const migrationResult = await performMigrationIfNeeded();
-        if (migrationResult.migrationPerformed) {
-          console.log('✅ Migration completed:', migrationResult.message);
-        } else {
-          console.log('ℹ️ Migration status:', migrationResult.message);
-        }
+        await performMigrationIfNeeded();
+        // Migration handled silently
         
         const value = await SecureStore.getItemAsync("authState");
         if (value) {
