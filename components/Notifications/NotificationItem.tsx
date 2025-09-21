@@ -1,17 +1,17 @@
+import {
+  formatNotificationTime,
+  getDeviceStatusColor,
+  getNotificationPriorityColor
+} from '@/utils/notificationHelpers';
+import {
+  DeviceNotification,
+  EmergencyNotification,
+  LocationNotification,
+  Notification
+} from '@/utils/notificationStorage';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { 
-  DeviceNotification, 
-  EmergencyNotification, 
-  LocationNotification, 
-  Notification 
-} from '@/utils/notificationStorage';
-import { 
-  formatNotificationTime, 
-  getDeviceStatusColor, 
-  getNotificationPriorityColor 
-} from '@/utils/notificationHelpers';
 
 interface NotificationItemProps {
   notification: Notification;

@@ -1,19 +1,19 @@
+import NotificationItem from '@/components/Notifications/NotificationItem';
+import { useAuth } from '@/context/AuthContext';
+import { useNotifications } from '@/context/NotificationContext';
+import {
+    clearLocationNotifications,
+    getLocationNotifications,
+    markAllLocationNotificationsAsRead,
+    markLocationNotificationAsRead,
+    removeLocationNotification,
+} from '@/utils/notificationHelpers';
+import { LocationNotification } from '@/utils/notificationTypeAdapters';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
-import { useNotifications } from '@/context/NotificationContext';
-import { LocationNotification } from '@/utils/notificationTypeAdapters';
-import {
-  clearLocationNotifications,
-  getLocationNotifications,
-  markAllLocationNotificationsAsRead,
-  markLocationNotificationAsRead,
-  removeLocationNotification,
-} from '@/utils/notificationHelpers';
-import NotificationItem from '@/components/Notifications/NotificationItem';
 
 const LocationNotificationsScreen = () => {
   const { authState } = useAuth();

@@ -1,19 +1,19 @@
+import EmergencyNotificationComponent from '@/components/Notifications/EmergencyNotification';
+import { useNotifications } from '@/context/NotificationContext';
+import { useEmergencyNotifications } from '@/hooks/useEmergencyNotifications';
+import {
+    clearEmergencyNotifications,
+    getEmergencyNotifications,
+    markAllEmergencyNotificationsAsRead,
+    markEmergencyNotificationAsRead,
+    removeEmergencyNotification,
+} from '@/utils/notificationHelpers';
+import { EmergencyNotification } from '@/utils/notificationTypeAdapters';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNotifications } from '@/context/NotificationContext';
-import { EmergencyNotification } from '@/utils/notificationTypeAdapters';
-import {
-  clearEmergencyNotifications,
-  getEmergencyNotifications,
-  markAllEmergencyNotificationsAsRead,
-  markEmergencyNotificationAsRead,
-  removeEmergencyNotification,
-} from '@/utils/notificationHelpers';
-import EmergencyNotificationComponent from '@/components/Notifications/EmergencyNotification';
-import { useEmergencyNotifications } from '@/hooks/useEmergencyNotifications';
 
 const EmergencyAlertsScreen = () => {
   const { refreshUnreadCounts, announceNewNotification } = useNotifications();

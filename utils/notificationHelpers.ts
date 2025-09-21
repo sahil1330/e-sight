@@ -1,13 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { NotificationController } from '../db/controllers/notificationController';
-import { 
-  convertToLocationNotifications, 
-  convertToEmergencyNotifications, 
-  convertToDeviceNotifications,
-  LocationNotification,
-  EmergencyNotification,
-  DeviceNotification
+import {
+    convertToDeviceNotifications,
+    convertToEmergencyNotifications,
+    convertToLocationNotifications,
+    DeviceNotification,
+    EmergencyNotification,
+    LocationNotification
 } from './notificationTypeAdapters';
 
 // Location notification helpers
