@@ -38,22 +38,26 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
       case 'emergency':
         const emergencyNotif = notification as EmergencyNotification;
+        const alertType = emergencyNotif.alertType || 'unknown';
+        const status = emergencyNotif.status || 'unknown';
+        const priority = emergencyNotif.priority || 'medium';
         return {
           icon: 'warning' as const,
-          iconColor: getNotificationPriorityColor(emergencyNotif.priority),
-          title: `${emergencyNotif.alertType.toUpperCase()} Alert`,
-          description: `Status: ${emergencyNotif.status}${emergencyNotif.details ? ` - ${emergencyNotif.details}` : ''}`,
-          accessibilityLabel: `Emergency alert notification. ${emergencyNotif.alertType} alert with status ${emergencyNotif.status}. Priority: ${emergencyNotif.priority}`,
+          iconColor: getNotificationPriorityColor(priority),
+          title: `${alertType.toUpperCase()} Alert`,
+          description: `Status: ${status}${emergencyNotif.details ? ` - ${emergencyNotif.details}` : ''}`,
+          accessibilityLabel: `Emergency alert notification. ${alertType} alert with status ${status}. Priority: ${priority}`,
         };
 
       case 'device':
         const deviceNotif = notification as DeviceNotification;
+        const deviceStatus = deviceNotif.status || 'unknown';
         return {
           icon: 'bluetooth' as const,
           iconColor: getDeviceStatusColor(deviceNotif.status),
-          title: `Device: ${deviceNotif.deviceName}`,
-          description: `Status: ${deviceNotif.status.replace('_', ' ')}${deviceNotif.details ? ` - ${deviceNotif.details}` : ''}`,
-          accessibilityLabel: `Device status notification. ${deviceNotif.deviceName} is ${deviceNotif.status.replace('_', ' ')}`,
+          title: `Device: ${deviceNotif.deviceName || 'Unknown Device'}`,
+          description: `Status: ${deviceStatus.replace('_', ' ')}${deviceNotif.details ? ` - ${deviceNotif.details}` : ''}`,
+          accessibilityLabel: `Device status notification. ${deviceNotif.deviceName || 'Unknown Device'} is ${deviceStatus.replace('_', ' ')}`,
         };
 
       default:

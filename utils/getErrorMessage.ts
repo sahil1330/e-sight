@@ -5,6 +5,11 @@
  */
 export async function getErrorMessage(errorHtml: string): Promise<string> {
     try {
+        // Handle null or undefined input
+        if (!errorHtml || typeof errorHtml !== 'string') {
+            return 'An unknown error occurred';
+        }
+        
         // Extract content between <pre> tags
         const preTagMatch = errorHtml.match(/<pre>(.*?)<\/pre>/s);
         
@@ -16,7 +21,7 @@ export async function getErrorMessage(errorHtml: string): Promise<string> {
         
         // If no match found, return the original string
         return errorHtml;
-    } catch (error) {
+    } catch {
         // In case of any parsing error, return the original string
         return errorHtml;
     }

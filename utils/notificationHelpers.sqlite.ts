@@ -1,14 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import { NotificationController } from '../db/controllers/notificationController';
-import { 
-  convertToLocationNotifications, 
-  convertToEmergencyNotifications, 
-  convertToDeviceNotifications,
-  LocationNotification,
-  EmergencyNotification,
-  DeviceNotification
-} from './notificationTypeAdapters';
 
 // Location notification helpers
 export const addLocationNotification = async (
@@ -26,9 +18,8 @@ export const addLocationNotification = async (
   });
 };
 
-export const getLocationNotifications = async (): Promise<LocationNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('location');
-  return convertToLocationNotifications(sqliteNotifications);
+export const getLocationNotifications = async () => {
+  return await NotificationController.getByType('location');
 };
 
 export const clearLocationNotifications = async (): Promise<number> => {
@@ -90,9 +81,8 @@ export const addEmergencyNotification = async (
   return notificationId;
 };
 
-export const getEmergencyNotifications = async (): Promise<EmergencyNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('emergency');
-  return convertToEmergencyNotifications(sqliteNotifications);
+export const getEmergencyNotifications = async () => {
+  return await NotificationController.getByType('emergency');
 };
 
 export const clearEmergencyNotifications = async (): Promise<number> => {
@@ -142,9 +132,8 @@ export const addDeviceNotification = async (
   return notificationId;
 };
 
-export const getDeviceNotifications = async (): Promise<DeviceNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('device');
-  return convertToDeviceNotifications(sqliteNotifications);
+export const getDeviceNotifications = async () => {
+  return await NotificationController.getByType('device');
 };
 
 export const clearDeviceNotifications = async (): Promise<number> => {

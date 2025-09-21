@@ -1,6 +1,7 @@
 import User from "@/schema/userSchema";
 import axiosInstance from "@/utils/axiosInstance";
 import { getErrorMessage } from "@/utils/getErrorMessage";
+import { performMigrationIfNeeded } from "@/utils/migrationRunner";
 import { isAxiosError } from "axios";
 import { SplashScreen } from "expo-router";
 import * as SecureStore from "expo-secure-store";
@@ -64,6 +65,15 @@ export const AuthProvider = ({ children }: any) => {
     setIsReady(false);
     const getAuthFromStorage = async () => {
       try {
+        // Perform migration from SecureStore to SQLite if needed
+        console.log('🔄 Checking for notification migration...');
+        const migrationResult = await performMigrationIfNeeded();
+        if (migrationResult.migrationPerformed) {
+          console.log('✅ Migration completed:', migrationResult.message);
+        } else {
+          console.log('ℹ️ Migration status:', migrationResult.message);
+        }
+        
         const value = await SecureStore.getItemAsync("authState");
         if (value) {
           const auth = JSON.parse(value);
@@ -74,7 +84,7 @@ export const AuthProvider = ({ children }: any) => {
           });
         }
       } catch (error) {
-        // console.error("Error while getting auth from secure store", error);
+        console.error("❌ Error during app initialization", error);
       } finally {
         setIsReady(true);
       }

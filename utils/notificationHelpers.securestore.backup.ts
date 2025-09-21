@@ -1,72 +1,80 @@
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
-import { NotificationController } from '../db/controllers/notificationController';
-import { 
-  convertToLocationNotifications, 
-  convertToEmergencyNotifications, 
-  convertToDeviceNotifications,
-  LocationNotification,
+import {
+  DeviceNotification,
   EmergencyNotification,
-  DeviceNotification
-} from './notificationTypeAdapters';
+  LocationNotification,
+  NOTIFICATION_KEYS,
+  addNotification,
+  clearAllNotifications,
+  generateNotificationId,
+  getNotifications,
+  getUnreadCount,
+  markAllAsRead,
+  markNotificationAsRead,
+  removeNotification,
+} from './notificationStorage';
 
 // Location notification helpers
 export const addLocationNotification = async (
   latitude: number,
-  longitude: number,
-  details?: string
-): Promise<string> => {
-  return await NotificationController.add({
+  longitude: number
+): Promise<void> => {
+  const notification: LocationNotification = {
+    id: generateNotificationId(),
     type: 'location',
-    timestamp: new Date(),
+    timestamp: Date.now(),
     isRead: false,
     latitude,
     longitude,
-    details,
-  });
+  };
+
+  await addNotification(NOTIFICATION_KEYS.LOCATION_UPDATES, notification);
 };
 
 export const getLocationNotifications = async (): Promise<LocationNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('location');
-  return convertToLocationNotifications(sqliteNotifications);
+  return getNotifications<LocationNotification>(NOTIFICATION_KEYS.LOCATION_UPDATES);
 };
 
-export const clearLocationNotifications = async (): Promise<number> => {
-  return await NotificationController.clearByType('location');
+export const clearLocationNotifications = async (): Promise<void> => {
+  await clearAllNotifications(NOTIFICATION_KEYS.LOCATION_UPDATES);
 };
 
-export const removeLocationNotification = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.delete(notificationId);
+export const removeLocationNotification = async (notificationId: string): Promise<void> => {
+  await removeNotification(NOTIFICATION_KEYS.LOCATION_UPDATES, notificationId);
 };
 
-export const markLocationNotificationAsRead = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.markAsRead(notificationId);
+export const markLocationNotificationAsRead = async (notificationId: string): Promise<void> => {
+  await markNotificationAsRead(NOTIFICATION_KEYS.LOCATION_UPDATES, notificationId);
 };
 
-export const markAllLocationNotificationsAsRead = async (): Promise<number> => {
-  return await NotificationController.markAllAsRead('location');
+export const markAllLocationNotificationsAsRead = async (): Promise<void> => {
+  await markAllAsRead(NOTIFICATION_KEYS.LOCATION_UPDATES);
 };
 
 export const getLocationNotificationsUnreadCount = async (): Promise<number> => {
-  return await NotificationController.getUnreadCount('location');
+  return getUnreadCount(NOTIFICATION_KEYS.LOCATION_UPDATES);
 };
 
 // Emergency notification helpers
 export const addEmergencyNotification = async (
-  alertType: 'sos' | 'panic' | 'medical' | 'fall_detection',
-  status: 'active' | 'resolved' | 'acknowledged',
-  priority: 'low' | 'medium' | 'high' | 'critical' = 'high',
+  alertType: EmergencyNotification['alertType'],
+  status: EmergencyNotification['status'],
+  priority: EmergencyNotification['priority'] = 'high',
   details?: string
-): Promise<string> => {
-  const notificationId = await NotificationController.add({
+): Promise<void> => {
+  const notification: EmergencyNotification = {
+    id: generateNotificationId(),
     type: 'emergency',
-    timestamp: new Date(),
+    timestamp: Date.now(),
     isRead: false,
     alertType,
     status,
     priority,
     details,
-  });
+  };
+
+  await addNotification(NOTIFICATION_KEYS.EMERGENCY_ALERTS, notification);
 
   // Provide haptic feedback for emergency alerts
   if (priority === 'critical' || priority === 'high') {
@@ -86,51 +94,51 @@ export const addEmergencyNotification = async (
       });
     }
   }
-
-  return notificationId;
 };
 
 export const getEmergencyNotifications = async (): Promise<EmergencyNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('emergency');
-  return convertToEmergencyNotifications(sqliteNotifications);
+  return getNotifications<EmergencyNotification>(NOTIFICATION_KEYS.EMERGENCY_ALERTS);
 };
 
-export const clearEmergencyNotifications = async (): Promise<number> => {
-  return await NotificationController.clearByType('emergency');
+export const clearEmergencyNotifications = async (): Promise<void> => {
+  await clearAllNotifications(NOTIFICATION_KEYS.EMERGENCY_ALERTS);
 };
 
-export const removeEmergencyNotification = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.delete(notificationId);
+export const removeEmergencyNotification = async (notificationId: string): Promise<void> => {
+  await removeNotification(NOTIFICATION_KEYS.EMERGENCY_ALERTS, notificationId);
 };
 
-export const markEmergencyNotificationAsRead = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.markAsRead(notificationId);
+export const markEmergencyNotificationAsRead = async (notificationId: string): Promise<void> => {
+  await markNotificationAsRead(NOTIFICATION_KEYS.EMERGENCY_ALERTS, notificationId);
 };
 
-export const markAllEmergencyNotificationsAsRead = async (): Promise<number> => {
-  return await NotificationController.markAllAsRead('emergency');
+export const markAllEmergencyNotificationsAsRead = async (): Promise<void> => {
+  await markAllAsRead(NOTIFICATION_KEYS.EMERGENCY_ALERTS);
 };
 
 export const getEmergencyNotificationsUnreadCount = async (): Promise<number> => {
-  return await NotificationController.getUnreadCount('emergency');
+  return getUnreadCount(NOTIFICATION_KEYS.EMERGENCY_ALERTS);
 };
 
 // Device notification helpers
 export const addDeviceNotification = async (
   deviceName: string,
   deviceId: string,
-  status: 'connected' | 'disconnected' | 'connection_failed' | 'pairing_started' | 'pairing_completed' | 'forgot_device',
+  status: DeviceNotification['status'],
   details?: string
-): Promise<string> => {
-  const notificationId = await NotificationController.add({
+): Promise<void> => {
+  const notification: DeviceNotification = {
+    id: generateNotificationId(),
     type: 'device',
-    timestamp: new Date(),
+    timestamp: Date.now(),
     isRead: false,
     deviceName,
     deviceId,
-    deviceStatus: status,
+    status,
     details,
-  });
+  };
+
+  await addNotification(NOTIFICATION_KEYS.DEVICE_STATUS, notification);
 
   // Provide haptic feedback for device connection changes
   if (status === 'connected') {
@@ -138,33 +146,30 @@ export const addDeviceNotification = async (
   } else if (status === 'disconnected' || status === 'connection_failed') {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
   }
-
-  return notificationId;
 };
 
 export const getDeviceNotifications = async (): Promise<DeviceNotification[]> => {
-  const sqliteNotifications = await NotificationController.getByType('device');
-  return convertToDeviceNotifications(sqliteNotifications);
+  return getNotifications<DeviceNotification>(NOTIFICATION_KEYS.DEVICE_STATUS);
 };
 
-export const clearDeviceNotifications = async (): Promise<number> => {
-  return await NotificationController.clearByType('device');
+export const clearDeviceNotifications = async (): Promise<void> => {
+  await clearAllNotifications(NOTIFICATION_KEYS.DEVICE_STATUS);
 };
 
-export const removeDeviceNotification = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.delete(notificationId);
+export const removeDeviceNotification = async (notificationId: string): Promise<void> => {
+  await removeNotification(NOTIFICATION_KEYS.DEVICE_STATUS, notificationId);
 };
 
-export const markDeviceNotificationAsRead = async (notificationId: string): Promise<boolean> => {
-  return await NotificationController.markAsRead(notificationId);
+export const markDeviceNotificationAsRead = async (notificationId: string): Promise<void> => {
+  await markNotificationAsRead(NOTIFICATION_KEYS.DEVICE_STATUS, notificationId);
 };
 
-export const markAllDeviceNotificationsAsRead = async (): Promise<number> => {
-  return await NotificationController.markAllAsRead('device');
+export const markAllDeviceNotificationsAsRead = async (): Promise<void> => {
+  await markAllAsRead(NOTIFICATION_KEYS.DEVICE_STATUS);
 };
 
 export const getDeviceNotificationsUnreadCount = async (): Promise<number> => {
-  return await NotificationController.getUnreadCount('device');
+  return getUnreadCount(NOTIFICATION_KEYS.DEVICE_STATUS);
 };
 
 // Combined helpers for all notification types
@@ -174,7 +179,18 @@ export const getAllNotificationsUnreadCount = async (): Promise<{
   device: number;
   total: number;
 }> => {
-  return await NotificationController.getAllUnreadCounts();
+  const [locationCount, emergencyCount, deviceCount] = await Promise.all([
+    getLocationNotificationsUnreadCount(),
+    getEmergencyNotificationsUnreadCount(),
+    getDeviceNotificationsUnreadCount(),
+  ]);
+
+  return {
+    location: locationCount,
+    emergency: emergencyCount,
+    device: deviceCount,
+    total: locationCount + emergencyCount + deviceCount,
+  };
 };
 
 export const clearAllNotificationsOfAllTypes = async (): Promise<void> => {
@@ -193,22 +209,9 @@ export const markAllNotificationsAsRead = async (): Promise<void> => {
   ]);
 };
 
-// Get all notifications across all types
-export const getAllNotifications = async (options?: {
-  limit?: number;
-  offset?: number;
-  unreadOnly?: boolean;
-}) => {
-  return await NotificationController.getAll({
-    isRead: options?.unreadOnly ? false : undefined,
-    limit: options?.limit,
-    offset: options?.offset,
-  });
-};
-
 // Utility function to format notification timestamps
-export const formatNotificationTime = (timestamp: Date | number): string => {
-  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+export const formatNotificationTime = (timestamp: number): string => {
+  const date = new Date(timestamp);
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
@@ -242,7 +245,7 @@ export const getNotificationPriorityColor = (priority?: string): string => {
 };
 
 // Utility function to get device status color
-export const getDeviceStatusColor = (status?: string): string => {
+export const getDeviceStatusColor = (status: DeviceNotification['status']): string => {
   switch (status) {
     case 'connected':
       return '#059669'; // emerald-600
@@ -259,14 +262,4 @@ export const getDeviceStatusColor = (status?: string): string => {
     default:
       return '#6B7280'; // gray-500
   }
-};
-
-// Clean up old notifications (utility for maintenance)
-export const cleanupOldNotifications = async (daysOld: number = 30): Promise<number> => {
-  return await NotificationController.cleanupOld(daysOld);
-};
-
-// Get notification by ID
-export const getNotificationById = async (id: string) => {
-  return await NotificationController.getById(id);
 };

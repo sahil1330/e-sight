@@ -45,6 +45,7 @@ function useBLE(): BLEAPI {
 
     // Refs for cleanup and monitoring
     const disconnectSubscription = useRef<Subscription | null>(null);
+    const characteristicSubscription = useRef<Subscription | null>(null);
     const healthCheckInterval = useRef<number | null>(null);
     const appState = useRef(AppState.currentState);
 
@@ -89,6 +90,12 @@ function useBLE(): BLEAPI {
             const isConnected = await connectedDevice.isConnected();
 
             if (!isConnected) {
+                // Clean up characteristic subscription
+                if (characteristicSubscription.current) {
+                    characteristicSubscription.current.remove();
+                    characteristicSubscription.current = null;
+                }
+                
                 // Add disconnection notification
                 await addDeviceNotification(
                     connectedDevice.name || "Unknown Device",
@@ -107,7 +114,13 @@ function useBLE(): BLEAPI {
                     setConnectionState('connected');
                 }
             }
-        } catch (error) {
+        } catch {
+            // Clean up characteristic subscription on error
+            if (characteristicSubscription.current) {
+                characteristicSubscription.current.remove();
+                characteristicSubscription.current = null;
+            }
+            
             // Device is likely disconnected due to error
             await addDeviceNotification(
                 connectedDevice.name || "Unknown Device",
@@ -194,6 +207,9 @@ function useBLE(): BLEAPI {
             if (disconnectSubscription.current) {
                 disconnectSubscription.current.remove();
             }
+            if (characteristicSubscription.current) {
+                characteristicSubscription.current.remove();
+            }
             if (healthCheckInterval.current) {
                 clearInterval(healthCheckInterval.current);
             }
@@ -211,6 +227,9 @@ function useBLE(): BLEAPI {
             }
             if (disconnectSubscription.current) {
                 disconnectSubscription.current.remove();
+            }
+            if (characteristicSubscription.current) {
+                characteristicSubscription.current.remove();
             }
             if (healthCheckInterval.current) {
                 clearInterval(healthCheckInterval.current);
@@ -500,6 +519,12 @@ function useBLE(): BLEAPI {
     const disconnectFromDevice = async () => {
         if (connectedDevice) {
             try {
+                // Clean up characteristic subscription first
+                if (characteristicSubscription.current) {
+                    characteristicSubscription.current.remove();
+                    characteristicSubscription.current = null;
+                }
+                
                 await bleManager.cancelDeviceConnection(connectedDevice.id);
 
                 // Add disconnection notification
@@ -515,6 +540,12 @@ function useBLE(): BLEAPI {
                 setConnectionState('disconnected');
             } catch (error) {
                 console.error("Error disconnecting from device:", error);
+
+                // Clean up subscription even on error
+                if (characteristicSubscription.current) {
+                    characteristicSubscription.current.remove();
+                    characteristicSubscription.current = null;
+                }
 
                 // Add disconnection failed notification (though we still clear the state)
                 await addDeviceNotification(
@@ -545,35 +576,73 @@ function useBLE(): BLEAPI {
             const value = (Buffer.from(characteristic.value, 'base64')).toString('utf-8');
             setMessages(prevMessages => [...prevMessages, value]);
             if (value === SOSMESSAGE) {
-                const lastLocationDataRaw = await SecureStore.getItemAsync(LAST_LOCATION_TOKEN);
-                const lastLocationData = await JSON.parse(lastLocationDataRaw as string);
-                const userDetailsRaw = await SecureStore.getItemAsync(USER_AUTH_STATE);
-                const userData = await JSON.parse(userDetailsRaw as string);
-                await sendSOS(userData.userDetails, {
-                    latitude: lastLocationData.location.latitude,
-                    longitude: lastLocationData.location.longitude
-                })
+                try {
+                    const lastLocationDataRaw = await SecureStore.getItemAsync(LAST_LOCATION_TOKEN);
+                    const lastLocationData = await JSON.parse(lastLocationDataRaw as string);
+                    const userDetailsRaw = await SecureStore.getItemAsync(USER_AUTH_STATE);
+                    const userData = await JSON.parse(userDetailsRaw as string);
+                    
+                    console.log('SOS triggered, sending emergency alerts...');
+                    const sosResult = await sendSOS(userData.userDetails, {
+                        latitude: lastLocationData.location.latitude,
+                        longitude: lastLocationData.location.longitude
+                    });
+                    
+                    if (sosResult.success) {
+                        console.log(`SOS processed successfully: ${sosResult.message}`);
+                    } else {
+                        console.error(`SOS processing failed: ${sosResult.message}`);
+                    }
+                } catch (sosError) {
+                    console.error("Error processing SOS message:", sosError);
+                    // Add fallback emergency notification if SOS processing fails completely
+                    await addDeviceNotification(
+                        connectedDevice?.name || "Unknown Device",
+                        connectedDevice?.id || "unknown",
+                        'connection_failed',
+                        `SOS received but processing failed: ${sosError instanceof Error ? sosError.message : 'Unknown error'}`
+                    );
+                }
             }
             return 0;
         } catch (decodeError) {
             console.error("Error decoding characteristic value:", decodeError);
             return -1;
         }
-    }, []);
+    }, [connectedDevice?.id, connectedDevice?.name]);
 
     const startStreamingData = useCallback(async (device: Device, writeCharacteristic: Characteristic | null) => {
         try {
             if (!writeCharacteristic) {
                 return;
             }
-            // Start monitoring the characteristic
-            device.monitorCharacteristicForService(
+            
+            // Clean up existing subscription if any
+            if (characteristicSubscription.current) {
+                characteristicSubscription.current.remove();
+                characteristicSubscription.current = null;
+            }
+            
+            // Check if device is still connected before starting monitoring
+            const isConnected = await device.isConnected();
+            if (!isConnected) {
+                console.warn('Device is not connected, skipping characteristic monitoring');
+                return;
+            }
+            
+            // Start monitoring the characteristic and store the subscription
+            characteristicSubscription.current = device.monitorCharacteristicForService(
                 writeCharacteristic.serviceUUID,
                 writeCharacteristic.uuid,
                 onMessageUpdate
             );
         } catch (error) {
             console.error("Error starting data stream:", error);
+            // Clean up subscription on error
+            if (characteristicSubscription.current) {
+                characteristicSubscription.current.remove();
+                characteristicSubscription.current = null;
+            }
         }
     }, [onMessageUpdate]);
 

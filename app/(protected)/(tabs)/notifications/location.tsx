@@ -5,7 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { LocationNotification } from '@/utils/notificationStorage';
+import { LocationNotification } from '@/utils/notificationTypeAdapters';
 import {
   clearLocationNotifications,
   getLocationNotifications,

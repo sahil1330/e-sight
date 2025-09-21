@@ -23,7 +23,7 @@ import {
   DeviceNotification,
   EmergencyNotification as EmergencyNotificationType,
   LocationNotification,
-} from '@/utils/notificationStorage';
+} from '@/utils/notificationTypeAdapters';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -55,11 +55,18 @@ const NotificationsList: React.FC = () => {
   // Load all notifications
   const loadNotifications = useCallback(async () => {
     try {
+      console.log('🔄 Loading notifications...');
       const [locationData, emergencyData, deviceData] = await Promise.all([
         userRole === 'caretaker' ? [] : getLocationNotifications(), // Caretakers don't see location updates
         getEmergencyNotifications(),
         userRole === 'caretaker' ? [] : getDeviceNotifications(), // Caretakers don't see device status
       ]);
+
+      console.log(`📊 Loaded notifications:`, {
+        location: locationData.length,
+        emergency: emergencyData.length,
+        device: deviceData.length,
+      });
 
       setLocationNotifications(locationData);
       setEmergencyNotifications(emergencyData);
@@ -68,7 +75,7 @@ const NotificationsList: React.FC = () => {
       // Refresh unread counts through context
       await refreshUnreadCounts();
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('❌ Error loading notifications:', error);
     }
   }, [userRole, refreshUnreadCounts]);
 

@@ -3,9 +3,8 @@ import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
-import { EmergencyNotification } from '@/utils/notificationStorage';
+import { EmergencyNotification } from '@/utils/notificationTypeAdapters';
 import {
   clearEmergencyNotifications,
   getEmergencyNotifications,
@@ -17,7 +16,6 @@ import EmergencyNotificationComponent from '@/components/Notifications/Emergency
 import { useEmergencyNotifications } from '@/hooks/useEmergencyNotifications';
 
 const EmergencyAlertsScreen = () => {
-  const { authState } = useAuth();
   const { refreshUnreadCounts, announceNewNotification } = useNotifications();
   const { acknowledgeEmergencyAlert } = useEmergencyNotifications();
 
