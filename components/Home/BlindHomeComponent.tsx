@@ -1,4 +1,3 @@
-import { useAuth } from "@/context/AuthContext";
 import User from "@/schema/userSchema";
 import { LAST_LOCATION_TOKEN } from "@/utils/constants";
 import LocationService from "@/utils/LocationService";
@@ -10,8 +9,8 @@ import {
   Alert,
   AppState,
   AppStateStatus,
+  Dimensions,
   Modal,
-  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -21,13 +20,34 @@ import QRCode from "react-native-qrcode-svg";
 import ConnectToDevice from "./ConnectToDevice";
 
 const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
+  // Force reload by adding console log
+  console.log("BlindHomeComponent loaded with responsive design");
+  
   const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
   const locationService = useRef(new LocationService()).current;
   const appState = useRef(AppState.currentState);
-  const { refreshUserState } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Get screen dimensions for responsive design
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  
+  // Calculate responsive sizes
+  const responsiveSize = {
+    // Base unit for spacing (5% of screen width)
+    baseUnit: screenWidth * 0.05,
+    // Text sizes based on screen size
+    headerText: Math.max(screenWidth * 0.055, 18),
+    bodyText: Math.max(screenWidth * 0.04, 14),
+    buttonText: Math.max(screenWidth * 0.045, 16),
+    // Icon sizes
+    iconSize: Math.max(screenWidth * 0.07, 24),
+    smallIconSize: Math.max(screenWidth * 0.05, 18),
+    // Container padding
+    containerPadding: screenWidth * 0.04,
+    // Button padding
+    buttonPadding: screenHeight * 0.015,
+  };
 
   const checkServiceStatus = useCallback(async () => {
     const isActive = await locationService.isServiceActive();
@@ -144,31 +164,6 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   };
 
   /**
-   * Callback function to refresh the user state.
-   * 
-   * Sets refreshing state to true while operation is in progress.
-   * If refreshUserState function is available, calls it and handles the result:
-   * - On error: Sets the error state with the error message
-   * - On success: Shows a success alert to the user
-   * Finally sets refreshing state to false when complete.
-   * 
-   * @async
-   * @returns {Promise<void>} A promise that resolves when refresh operation completes
-   */
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    if (refreshUserState) {
-      const result = await refreshUserState();
-      if (result.isError) {
-        setError(result.message);
-      } else {
-        Alert.alert("Success", "User state refreshed successfully");
-      }
-    }
-    setRefreshing(false);
-  }, [refreshUserState]);
-
-  /**
    * Handles the user pressing the emergency button.
    * Displays a confirmation alert asking if the user wants to notify caretakers.
    * 
@@ -206,68 +201,64 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   };
 
   return (
-    <ScrollView
-      className="flex-1 bg-white"
-      contentContainerClassName="pb-12"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      accessibilityLabel="E-Kaathi home screen content"
-      showsVerticalScrollIndicator={false}
+    <View 
+      style={{ flex: 1, backgroundColor: '#e3f2fd' }} // Light blue background to verify loading
+      accessibilityLabel="E-Kaathi home screen content - responsive design"
     >
-      {/* Welcome Header - Professional enterprise styling */}
-      <View className="bg-slate-800 px-6 py-8 rounded-b-2xl shadow-lg border-b border-slate-700">
-        <Text
-          className="text-white text-2xl font-semibold mb-2"
-          accessibilityRole="header"
-          accessibilityLabel={`Welcome to E-Kaathi, ${userDetails.fullName?.split(" ")[0] || "User"}`}
-        >
-          Welcome, {userDetails.fullName?.split(" ")[0] || "User"}
-        </Text>
-        <Text className="text-slate-300 text-base font-medium">
-          E-Kaathi Navigation Assistant
-        </Text>
-        <View className="flex-row items-center mt-3">
-          {userDetails.isVerified ? (
-            <View className="bg-emerald-600 rounded-lg px-3 py-1.5 flex-row items-center border border-emerald-500">
-              <Ionicons name="checkmark-circle" size={16} color="white" />
-              <Text className="text-white text-sm font-medium ml-2">Verified Account</Text>
-            </View>
-          ) : (
-            <View className="bg-amber-600 rounded-lg px-3 py-1.5 flex-row items-center border border-amber-500">
-              <Ionicons name="alert-circle" size={16} color="white" />
-              <Text className="text-white text-sm font-medium ml-2">Pending Verification</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      <View className="px-6 mt-6 space-y-5">
-        {/* Location Tracking Status - Professional design */}
-        <View className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <View className="flex-row items-center mb-4">
-            <View className={`w-3 h-3 rounded-full mr-3 ${isTracking ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+      {/* Location Tracking Status - 20% of viewport */}
+      <View style={{ height: '20%', paddingHorizontal: responsiveSize.containerPadding, paddingTop: responsiveSize.baseUnit }}>
+        <View style={{ 
+          backgroundColor: 'white', 
+          borderRadius: responsiveSize.baseUnit, 
+          padding: responsiveSize.containerPadding,
+          height: '100%',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+          borderWidth: 1,
+          borderColor: '#e5e7eb'
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: responsiveSize.baseUnit * 0.4 }}>
+            <View style={{ 
+              width: responsiveSize.baseUnit * 0.6, 
+              height: responsiveSize.baseUnit * 0.6, 
+              borderRadius: responsiveSize.baseUnit * 0.3, 
+              marginRight: responsiveSize.baseUnit * 0.6,
+              backgroundColor: isTracking ? '#10b981' : '#9ca3af'
+            }} />
             <Text
-              className="text-lg font-semibold text-slate-800"
+              style={{ 
+                fontSize: responsiveSize.headerText, 
+                fontWeight: '600', 
+                color: '#1e293b',
+                flex: 1
+              }}
               accessibilityRole="header"
             >
               Location Tracking
             </Text>
           </View>
 
-          <Text
-            className={`text-base mb-5 leading-relaxed ${isTracking ? 'text-emerald-700' : 'text-slate-600'}`}
-            accessibilityLabel={isTracking ? "Location tracking is currently active. Your caretakers can see your real-time location." : "Location tracking is currently inactive. Your caretakers cannot see your location."}
-          >
-            {isTracking
-              ? "✓ Location tracking is active. Your caretakers can monitor your location in real-time for your safety."
-              : "⚠ Location tracking is inactive. Tap the button below to start sharing your location with your caretakers."
-            }
-          </Text>
-
           <TouchableOpacity
-            className={`py-6 px-10 rounded-lg flex-row items-center justify-center shadow-sm border ${isTracking ? 'bg-red-600 border-red-700' : 'bg-emerald-600 border-emerald-700'
-              }`}
+            style={{
+              paddingVertical: responsiveSize.buttonPadding,
+              paddingHorizontal: responsiveSize.containerPadding,
+              borderRadius: responsiveSize.baseUnit * 0.6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flex: 1,
+              backgroundColor: isTracking ? '#dc2626' : '#10b981',
+              borderWidth: 1,
+              borderColor: isTracking ? '#b91c1c' : '#059669',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 3,
+              elevation: 2,
+            }}
             onPress={handleToggleTracking}
             accessibilityRole="button"
             accessibilityLabel={isTracking ? "Stop location tracking" : "Start location tracking"}
@@ -275,111 +266,255 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           >
             <Ionicons
               name={isTracking ? "stop-circle" : "play-circle"}
-              size={30}
+              size={responsiveSize.iconSize}
               color="white"
             />
-            <Text className="text-white text-2xl font-semibold ml-3">
+            <Text style={{ 
+              color: 'white', 
+              fontSize: responsiveSize.buttonText, 
+              fontWeight: '600', 
+              marginLeft: responsiveSize.baseUnit * 0.6 
+            }}>
               {isTracking ? "Stop Tracking" : "Start Tracking"}
             </Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Device Connection - Professional design */}
-        <View className="bg-white rounded-xl p-6 my-4 shadow-md border border-gray-200">
+      {/* Device Connection - 30% of viewport */}
+      <View style={{ height: '35%', paddingHorizontal: responsiveSize.containerPadding, paddingVertical: responsiveSize.baseUnit * 0.4 }}>
+        <View style={{ 
+          backgroundColor: 'white', 
+          borderRadius: responsiveSize.baseUnit, 
+          padding: responsiveSize.containerPadding,
+          height: '100%',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+          borderWidth: 1,
+          borderColor: '#e5e7eb'
+        }}>
           <Text
-            className="text-lg font-semibold text-slate-800 mb-4"
+            style={{ 
+              fontSize: responsiveSize.headerText, 
+              fontWeight: '600', 
+              color: '#1e293b',
+              marginBottom: responsiveSize.baseUnit * 0.6
+            }}
             accessibilityRole="header"
           >
             Device Connection
           </Text>
-          <ConnectToDevice />
+          <View style={{ flex: 1 }}>
+            <ConnectToDevice />
+          </View>
         </View>
+      </View>
 
-        {/* Connected Caretakers - Professional design */}
-        <View className="bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <View className="flex-row justify-between items-center mb-4">
+      {/* Connected Caretakers - 30% of viewport with internal scrolling */}
+      <View style={{ height: '30%', paddingHorizontal: responsiveSize.containerPadding, paddingVertical: responsiveSize.baseUnit * 0.4 }}>
+        <View style={{ 
+          backgroundColor: 'white', 
+          borderRadius: responsiveSize.baseUnit, 
+          padding: responsiveSize.containerPadding,
+          height: '100%',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 3,
+          borderWidth: 1,
+          borderColor: '#e5e7eb'
+        }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: responsiveSize.baseUnit * 0.6 }}>
             <Text
-              className="text-lg font-semibold text-slate-800"
+              style={{ 
+                fontSize: responsiveSize.headerText, 
+                fontWeight: '600', 
+                color: '#1e293b'
+              }}
               accessibilityRole="header"
             >
               Caretakers ({userDetails.connectedUsers?.length || 0})
             </Text>
             <TouchableOpacity
-              className="bg-blue-600 rounded-lg py-2.5 px-4 flex-row items-center shadow-sm border border-blue-700"
+              style={{
+                backgroundColor: '#2563eb',
+                borderRadius: responsiveSize.baseUnit * 0.5,
+                paddingVertical: responsiveSize.baseUnit * 0.4,
+                paddingHorizontal: responsiveSize.baseUnit * 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#1d4ed8',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 1,
+              }}
               onPress={() => setModalVisible(true)}
               accessibilityRole="button"
               accessibilityLabel="Add new caretaker"
               accessibilityHint="Double tap to show QR code for connecting a new caretaker"
             >
-              <Ionicons name="person-add" size={18} color="white" />
-              <Text className="text-white text-sm font-medium ml-2">Add</Text>
+              <Ionicons name="person-add" size={responsiveSize.smallIconSize} color="white" />
+              <Text style={{ 
+                color: 'white', 
+                fontSize: responsiveSize.bodyText, 
+                fontWeight: '500', 
+                marginLeft: responsiveSize.baseUnit * 0.4 
+              }}>Add</Text>
             </TouchableOpacity>
           </View>
 
           {userDetails.connectedUsers && userDetails.connectedUsers.length > 0 ? (
-            <View className="space-y-4">
-              {userDetails.connectedUsers.map((caretaker, index) => (
-                <View
-                  key={caretaker._id}
-                  className="flex-row items-center p-4 bg-gray-50 rounded-lg border border-gray-200"
-                  accessibilityRole="text"
-                  accessibilityLabel={`Caretaker: ${caretaker.fullName || "Unknown name"}, Email: ${caretaker.email}`}
-                >
-                  <View className="w-12 h-12 rounded-lg bg-blue-100 items-center justify-center mr-4 border border-blue-200">
-                    <Text className="text-blue-700 text-lg font-semibold">
-                      {caretaker.fullName?.charAt(0) || "C"}
-                    </Text>
+            <ScrollView 
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={true}
+              accessibilityLabel="List of connected caretakers"
+            >
+              <View style={{ gap: responsiveSize.baseUnit * 0.6 }}>
+                {userDetails.connectedUsers.map((caretaker, index) => (
+                  <View
+                    key={caretaker._id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      padding: responsiveSize.baseUnit * 0.6,
+                      backgroundColor: '#f9fafb',
+                      borderRadius: responsiveSize.baseUnit * 0.5,
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb'
+                    }}
+                    accessibilityRole="text"
+                    accessibilityLabel={`Caretaker: ${caretaker.fullName || "Unknown name"}, Email: ${caretaker.email}`}
+                  >
+                    <View style={{
+                      width: responsiveSize.baseUnit * 2,
+                      height: responsiveSize.baseUnit * 2,
+                      borderRadius: responsiveSize.baseUnit * 0.5,
+                      backgroundColor: '#dbeafe',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: responsiveSize.baseUnit * 0.6,
+                      borderWidth: 1,
+                      borderColor: '#93c5fd'
+                    }}>
+                      <Text style={{
+                        color: '#1d4ed8',
+                        fontSize: responsiveSize.bodyText,
+                        fontWeight: '600'
+                      }}>
+                        {caretaker.fullName?.charAt(0) || "C"}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{
+                        color: '#1e293b',
+                        fontSize: responsiveSize.bodyText,
+                        fontWeight: '600'
+                      }}>
+                        {caretaker.fullName || "Unknown"}
+                      </Text>
+                      <Text style={{
+                        color: '#64748b',
+                        fontSize: responsiveSize.bodyText * 0.9,
+                        marginTop: responsiveSize.baseUnit * 0.1
+                      }}>
+                        {caretaker.email}
+                      </Text>
+                    </View>
+                    <View style={{
+                      width: responsiveSize.baseUnit * 0.5,
+                      height: responsiveSize.baseUnit * 0.5,
+                      borderRadius: responsiveSize.baseUnit * 0.25,
+                      backgroundColor: '#10b981',
+                      borderWidth: 1,
+                      borderColor: '#059669'
+                    }}
+                      accessibilityLabel="Connected and active" />
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-slate-800 text-base font-semibold">
-                      {caretaker.fullName || "Unknown"}
-                    </Text>
-                    <Text className="text-slate-600 text-sm mt-0.5">
-                      {caretaker.email}
-                    </Text>
-                  </View>
-                  <View className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-emerald-600"
-                    accessibilityLabel="Connected and active" />
-                </View>
-              ))}
-            </View>
+                ))}
+              </View>
+            </ScrollView>
           ) : (
-            <View className="py-8 items-center">
-              <Ionicons name="people-outline" size={48} color="#9CA3AF" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="people-outline" size={responsiveSize.iconSize * 2} color="#9ca3af" />
               <Text
-                className="text-slate-500 text-base mt-4 text-center font-medium"
+                style={{
+                  color: '#64748b',
+                  fontSize: responsiveSize.bodyText,
+                  marginTop: responsiveSize.baseUnit * 0.6,
+                  textAlign: 'center',
+                  fontWeight: '500'
+                }}
                 accessibilityLabel="No caretakers connected. Add a caretaker to help monitor your location and provide assistance."
               >
                 No caretakers connected yet
               </Text>
-              <Text className="text-slate-400 text-sm text-center mt-2 leading-relaxed">
+              <Text style={{
+                color: '#9ca3af',
+                fontSize: responsiveSize.bodyText * 0.9,
+                textAlign: 'center',
+                marginTop: responsiveSize.baseUnit * 0.4,
+                lineHeight: responsiveSize.bodyText * 1.3
+              }}>
                 Add a caretaker to help monitor your location and provide assistance when needed
               </Text>
             </View>
           )}
         </View>
+      </View>
 
-        {/* Emergency Button - Professional critical design */}
+      {/* Emergency Button - 10% of viewport */}
+      <View style={{ height: '10%', paddingHorizontal: responsiveSize.containerPadding, paddingVertical: responsiveSize.baseUnit * 0.4 }}>
         <TouchableOpacity
-          className="bg-red-600 py-4 my-4 rounded-xl shadow-lg border border-red-700"
+          style={{
+            backgroundColor: '#dc2626',
+            borderRadius: responsiveSize.baseUnit,
+            height: '100%',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: '#b91c1c',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 3 },
+            shadowOpacity: 0.2,
+            shadowRadius: 5,
+            elevation: 4,
+          }}
           onPress={handleEmergencyPress}
           accessibilityRole="button"
           accessibilityLabel="Emergency assistance button"
           accessibilityHint="Double tap to send emergency alert to all connected caretakers with your current location"
         >
-          <View className="flex-row justify-center items-center">
-            <Ionicons name="warning" size={24} color="white" />
-            <Text className="text-white font-semibold text-lg ml-3">
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="warning" size={responsiveSize.iconSize} color="white" />
+            <Text style={{
+              color: 'white',
+              fontWeight: '600',
+              fontSize: responsiveSize.buttonText,
+              marginLeft: responsiveSize.baseUnit * 0.6
+            }}>
               Emergency Assistance
             </Text>
           </View>
-          <Text className="text-red-100 text-sm text-center mt-2 font-medium">
+          <Text style={{
+            color: '#fecaca',
+            fontSize: responsiveSize.bodyText * 0.9,
+            textAlign: 'center',
+            marginTop: responsiveSize.baseUnit * 0.2,
+            fontWeight: '500'
+          }}>
             Tap to alert all caretakers
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* QR Code Modal - Professional enterprise styling */}
+      {/* QR Code Modal - Responsive design */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -387,45 +522,102 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         onRequestClose={() => setModalVisible(false)}
         accessibilityViewIsModal={true}
       >
-        <View className="flex-1 justify-center items-center bg-black/60 px-6">
-          <View className="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg border border-gray-200">
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          paddingHorizontal: responsiveSize.containerPadding
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: responsiveSize.baseUnit,
+            padding: responsiveSize.containerPadding,
+            width: '100%',
+            maxWidth: screenWidth * 0.85,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.2,
+            shadowRadius: 8,
+            elevation: 5,
+            borderWidth: 1,
+            borderColor: '#e5e7eb'
+          }}>
             <Text
-              className="text-slate-800 text-lg font-semibold mb-4 text-center"
+              style={{
+                color: '#1e293b',
+                fontSize: responsiveSize.headerText,
+                fontWeight: '600',
+                marginBottom: responsiveSize.baseUnit,
+                textAlign: 'center'
+              }}
               accessibilityRole="header"
             >
               Your Connection Code
             </Text>
             <Text
-              className="text-slate-600 text-base mb-6 text-center leading-relaxed"
+              style={{
+                color: '#64748b',
+                fontSize: responsiveSize.bodyText,
+                marginBottom: responsiveSize.baseUnit * 1.2,
+                textAlign: 'center',
+                lineHeight: responsiveSize.bodyText * 1.4
+              }}
               accessibilityLabel="Share this QR code with your caretakers to connect with them. They can scan this code using their camera app."
             >
               Share this code with your caretakers to connect with them. They can scan it using their camera.
             </Text>
 
             <View
-              className="bg-gray-50 border border-dashed border-gray-300 p-6 rounded-lg mb-6 items-center"
+              style={{
+                backgroundColor: '#f9fafb',
+                borderWidth: 2,
+                borderStyle: 'dashed',
+                borderColor: '#d1d5db',
+                padding: responsiveSize.baseUnit * 1.2,
+                borderRadius: responsiveSize.baseUnit * 0.5,
+                marginBottom: responsiveSize.baseUnit * 1.2,
+                alignItems: 'center'
+              }}
               accessibilityLabel="QR Code for connection"
             >
               <QRCode
                 value={userDetails._id}
-                size={180}
+                size={Math.min(screenWidth * 0.45, 200)}
                 backgroundColor="transparent"
                 color="#1F2937"
               />
             </View>
 
             <TouchableOpacity
-              className="bg-blue-600 py-3 px-6 rounded-lg shadow-sm border border-blue-700"
+              style={{
+                backgroundColor: '#2563eb',
+                paddingVertical: responsiveSize.buttonPadding,
+                paddingHorizontal: responsiveSize.containerPadding,
+                borderRadius: responsiveSize.baseUnit * 0.5,
+                borderWidth: 1,
+                borderColor: '#1d4ed8',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 2,
+              }}
               onPress={() => setModalVisible(false)}
               accessibilityRole="button"
               accessibilityLabel="Close QR code modal"
             >
-              <Text className="text-white text-center text-base font-semibold">Close</Text>
+              <Text style={{
+                color: 'white',
+                textAlign: 'center',
+                fontSize: responsiveSize.bodyText,
+                fontWeight: '600'
+              }}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 };
 
