@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import User from "@/schema/userSchema";
 import { LAST_LOCATION_TOKEN } from "@/utils/constants";
 import LocationService from "@/utils/LocationService";
@@ -11,6 +12,7 @@ import {
   AppStateStatus,
   Dimensions,
   Modal,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -22,16 +24,17 @@ import ConnectToDevice from "./ConnectToDevice";
 const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   // Force reload by adding console log
   console.log("BlindHomeComponent loaded with responsive design");
-  
+
   const [error, setError] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const locationService = useRef(new LocationService()).current;
   const appState = useRef(AppState.currentState);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { refreshUserState } = useAuth()
   // Get screen dimensions for responsive design
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  
+
   // Calculate responsive sizes
   const responsiveSize = {
     // Base unit for spacing (5% of screen width)
@@ -200,16 +203,53 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
     );
   };
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      // Refresh location tracking status
+      await checkServiceStatus();
+
+      // Refresh connection status
+      await checkConnectionStatus();
+
+      if (refreshUserState) {
+        await refreshUserState();
+      }
+
+      // Add a small delay for better UX
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 800);
+    } catch (error) {
+      console.error("Error during refresh:", error);
+      setIsRefreshing(false);
+      Alert.alert("Refresh Error", "Failed to refresh data. Please try again.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [checkServiceStatus, checkConnectionStatus, refreshUserState]);
+
   return (
-    <View 
-      style={{ flex: 1, backgroundColor: '#e3f2fd' }} // Light blue background to verify loading
+    <ScrollView
+      style={{ flex: 1, backgroundColor: '#e3f2fd' }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      scrollEnabled={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          colors={['#2563eb']}
+          tintColor="#2563eb"
+        />
+      }
+      showsVerticalScrollIndicator={false}
       accessibilityLabel="E-Kaathi home screen content - responsive design"
     >
       {/* Location Tracking Status - 20% of viewport */}
       <View style={{ height: '20%', paddingHorizontal: responsiveSize.containerPadding, paddingTop: responsiveSize.baseUnit }}>
-        <View style={{ 
-          backgroundColor: 'white', 
-          borderRadius: responsiveSize.baseUnit, 
+        <View style={{
+          backgroundColor: 'white',
+          borderRadius: responsiveSize.baseUnit,
           padding: responsiveSize.containerPadding,
           height: '100%',
           shadowColor: '#000',
@@ -221,17 +261,17 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           borderColor: '#e5e7eb'
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: responsiveSize.baseUnit * 0.4 }}>
-            <View style={{ 
-              width: responsiveSize.baseUnit * 0.6, 
-              height: responsiveSize.baseUnit * 0.6, 
-              borderRadius: responsiveSize.baseUnit * 0.3, 
+            <View style={{
+              width: responsiveSize.baseUnit * 0.6,
+              height: responsiveSize.baseUnit * 0.6,
+              borderRadius: responsiveSize.baseUnit * 0.3,
               marginRight: responsiveSize.baseUnit * 0.6,
               backgroundColor: isTracking ? '#10b981' : '#9ca3af'
             }} />
             <Text
-              style={{ 
-                fontSize: responsiveSize.headerText, 
-                fontWeight: '600', 
+              style={{
+                fontSize: responsiveSize.headerText,
+                fontWeight: '600',
                 color: '#1e293b',
                 flex: 1
               }}
@@ -269,11 +309,11 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
               size={responsiveSize.iconSize}
               color="white"
             />
-            <Text style={{ 
-              color: 'white', 
-              fontSize: responsiveSize.buttonText, 
-              fontWeight: '600', 
-              marginLeft: responsiveSize.baseUnit * 0.6 
+            <Text style={{
+              color: 'white',
+              fontSize: responsiveSize.buttonText,
+              fontWeight: '600',
+              marginLeft: responsiveSize.baseUnit * 0.6
             }}>
               {isTracking ? "Stop Tracking" : "Start Tracking"}
             </Text>
@@ -283,9 +323,9 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
 
       {/* Device Connection - 30% of viewport */}
       <View style={{ height: '35%', paddingHorizontal: responsiveSize.containerPadding, paddingVertical: responsiveSize.baseUnit * 0.4 }}>
-        <View style={{ 
-          backgroundColor: 'white', 
-          borderRadius: responsiveSize.baseUnit, 
+        <View style={{
+          backgroundColor: 'white',
+          borderRadius: responsiveSize.baseUnit,
           padding: responsiveSize.containerPadding,
           height: '100%',
           shadowColor: '#000',
@@ -297,9 +337,9 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           borderColor: '#e5e7eb'
         }}>
           <Text
-            style={{ 
-              fontSize: responsiveSize.headerText, 
-              fontWeight: '600', 
+            style={{
+              fontSize: responsiveSize.headerText,
+              fontWeight: '600',
               color: '#1e293b',
               marginBottom: responsiveSize.baseUnit * 0.6
             }}
@@ -315,9 +355,9 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
 
       {/* Connected Caretakers - 30% of viewport with internal scrolling */}
       <View style={{ height: '30%', paddingHorizontal: responsiveSize.containerPadding, paddingVertical: responsiveSize.baseUnit * 0.4 }}>
-        <View style={{ 
-          backgroundColor: 'white', 
-          borderRadius: responsiveSize.baseUnit, 
+        <View style={{
+          backgroundColor: 'white',
+          borderRadius: responsiveSize.baseUnit,
           padding: responsiveSize.containerPadding,
           height: '100%',
           shadowColor: '#000',
@@ -330,9 +370,9 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: responsiveSize.baseUnit * 0.6 }}>
             <Text
-              style={{ 
-                fontSize: responsiveSize.headerText, 
-                fontWeight: '600', 
+              style={{
+                fontSize: responsiveSize.headerText,
+                fontWeight: '600',
                 color: '#1e293b'
               }}
               accessibilityRole="header"
@@ -361,17 +401,17 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
               accessibilityHint="Double tap to show QR code for connecting a new caretaker"
             >
               <Ionicons name="person-add" size={responsiveSize.smallIconSize} color="white" />
-              <Text style={{ 
-                color: 'white', 
-                fontSize: responsiveSize.bodyText, 
-                fontWeight: '500', 
-                marginLeft: responsiveSize.baseUnit * 0.4 
+              <Text style={{
+                color: 'white',
+                fontSize: responsiveSize.bodyText,
+                fontWeight: '500',
+                marginLeft: responsiveSize.baseUnit * 0.4
               }}>Add</Text>
             </TouchableOpacity>
           </View>
 
           {userDetails.connectedUsers && userDetails.connectedUsers.length > 0 ? (
-            <ScrollView 
+            <ScrollView
               style={{ flex: 1 }}
               showsVerticalScrollIndicator={true}
               accessibilityLabel="List of connected caretakers"
@@ -617,7 +657,7 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 

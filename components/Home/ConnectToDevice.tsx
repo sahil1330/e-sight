@@ -35,8 +35,6 @@ const ConnectToDevice = () => {
     connectionState,
     checkConnectionHealth,
     isBackgroundServiceActive,
-    startBackgroundService,
-    stopBackgroundService
   } = useBLE();
 
   // Update connection status based on connectionState instead of just connectedDevice
@@ -139,6 +137,25 @@ const ConnectToDevice = () => {
       Alert.alert("Health Check Error", "Failed to check connection health");
       console.error("Health check error:", error);
     }
+  };
+
+  const handleDeviceInfo = () => {
+    setShowPopover(false);
+    const deviceInfo = `Device Name: ${deviceName || 'Unknown'}
+Device ID: ${connectedDevice?.id || 'N/A'}
+Connection State: ${connectionState || 'Unknown'}
+Background Service: ${isBackgroundServiceActive ? 'Active' : 'Inactive'}`;
+    
+    Alert.alert(
+      "Device Information",
+      deviceInfo,
+      [
+        {
+          text: "OK",
+          style: "default",
+        }
+      ]
+    );
   };
 
   // Open modal and start scanning
@@ -391,6 +408,30 @@ const ConnectToDevice = () => {
                   <Ionicons name="pulse-outline" size={responsiveSize.iconSize} color="#3b82f6" />
                 </View>
                 <Text style={{ color: '#1f2937', fontSize: responsiveSize.textSize, fontWeight: '600' }}>Check Connection</Text>
+              </TouchableOpacity>
+
+              {/* Device Info Option */}
+              <TouchableOpacity
+                onPress={handleDeviceInfo}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: responsiveSize.baseUnit * 0.7,
+                  paddingHorizontal: responsiveSize.baseUnit * 0.4
+                }}
+              >
+                <View style={{
+                  width: responsiveSize.baseUnit * 1.8,
+                  height: responsiveSize.baseUnit * 1.8,
+                  borderRadius: responsiveSize.baseUnit * 0.9,
+                  backgroundColor: '#f3e8ff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: responsiveSize.baseUnit * 0.7
+                }}>
+                  <Ionicons name="information-circle-outline" size={responsiveSize.iconSize} color="#7c3aed" />
+                </View>
+                <Text style={{ color: '#1f2937', fontSize: responsiveSize.textSize, fontWeight: '600' }}>Device Info</Text>
               </TouchableOpacity>
 
               {/* Disconnect Option */}
