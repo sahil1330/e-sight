@@ -262,7 +262,6 @@ export const AuthProvider = ({ children }: any) => {
       axiosInstance.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${newState.token}`;
-      console.log("got here")
       return { success: true, message: "User state refreshed successfully" };
     } catch (error) {
       console.error("Error refreshing user state:", error);

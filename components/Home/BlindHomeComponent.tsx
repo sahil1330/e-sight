@@ -23,8 +23,7 @@ import ConnectToDevice from "./ConnectToDevice";
 
 const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
   // Force reload by adding console log
-  console.log("BlindHomeComponent loaded with responsive design");
-
+  
   const [error, setError] = useState<string | null>(null);
   const [isTracking, setIsTracking] = useState(false);
   const locationService = useRef(new LocationService()).current;
