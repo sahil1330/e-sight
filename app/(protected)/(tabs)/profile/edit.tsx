@@ -1,19 +1,20 @@
 import ProfileAvatar from "@/components/Profile/ProfileAvatar";
 import { useAuth } from "@/context/AuthContext";
+import axiosInstance from "@/utils/axiosInstance";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { z } from "zod";
@@ -28,11 +29,11 @@ const profileSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function EditProfileScreen() {
-  const { authState } = useAuth();
+  const { authState, updateUser } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  
+
   const user = authState?.userDetails;
 
   const {
@@ -63,9 +64,17 @@ export default function EditProfileScreen() {
   const onSaveProfile = async (data: ProfileFormData) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
+      const response = await axiosInstance.patch("/users/edit-profile", data);
+      if (response.status === 200) {
+        // Get the updateUser method from the context
+
+        // Update auth state with new profile data
+        if (updateUser && authState?.userDetails) {
+          updateUser({ ...authState.userDetails, ...data });
+        }
+      }
+      // Show success message and navigate back
       Alert.alert("Success", "Your profile has been updated successfully!", [
         { text: "OK", onPress: () => router.back() }
       ]);
@@ -119,13 +128,12 @@ export default function EditProfileScreen() {
                   name="fullName"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.fullName
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "fullName"
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.fullName
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "fullName"
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white"
-                      }`}
+                        }`}
                       style={{
                         minHeight: 56,
                         shadowColor: '#000',
@@ -166,13 +174,12 @@ export default function EditProfileScreen() {
                   name="email"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.email
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "email"
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.email
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "email"
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white"
-                      }`}
+                        }`}
                       style={{
                         minHeight: 56,
                         shadowColor: '#000',
@@ -215,13 +222,12 @@ export default function EditProfileScreen() {
                   name="phone"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`border-2 rounded-xl px-4 py-4 text-base ${
-                        errors.phone
-                          ? "border-red-500 bg-red-50"
-                          : focusedField === "phone"
+                      className={`border-2 rounded-xl px-4 py-4 text-base ${errors.phone
+                        ? "border-red-500 bg-red-50"
+                        : focusedField === "phone"
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 bg-white"
-                      }`}
+                        }`}
                       style={{
                         minHeight: 56,
                         shadowColor: '#000',
@@ -276,9 +282,8 @@ export default function EditProfileScreen() {
                 <TouchableOpacity
                   onPress={handleSubmit(onSaveProfile)}
                   disabled={loading}
-                  className={`flex-1 rounded-xl py-4 items-center ${
-                    loading ? "bg-blue-400" : "bg-blue-600"
-                  }`}
+                  className={`flex-1 rounded-xl py-4 items-center ${loading ? "bg-blue-400" : "bg-blue-600"
+                    }`}
                   style={{
                     minHeight: 56,
                     shadowColor: '#000',

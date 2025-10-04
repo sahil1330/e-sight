@@ -27,12 +27,13 @@ interface AuthProps {
   logout?: () => Promise<any>;
   updateConnectedUsers?: (connectedUsers: User) => Promise<any>;
   refreshUserState?: () => Promise<any>;
+  updateUser?: (user: User) => Promise<any>;
   isLoading?: boolean;
   setAuthState?: any;
   isReady?: boolean;
 }
 
-const TOKEN_KEY = "authState";
+export const TOKEN_KEY = "authState";
 
 const AuthContext = createContext<AuthProps>({});
 
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }: any) => {
         // Perform migration from SecureStore to SQLite if needed
         await performMigrationIfNeeded();
         // Migration handled silently
-        
+
         const value = await SecureStore.getItemAsync("authState");
         if (value) {
           const auth = JSON.parse(value);
@@ -221,6 +222,39 @@ export const AuthProvider = ({ children }: any) => {
     }
   };
 
+  const updateUser = async (user: User) => {
+    try {
+      setAuthState(prev => {
+        if (!prev) {
+          throw new Error("Previous auth state not found");
+        }
+        return {
+          ...prev,
+          userDetails: {
+            ...prev.userDetails,
+            ...user,
+          },
+        };
+      });
+
+      await storeAuthStateInStorage({
+        token: authState?.token,
+        authenticated: true,
+        userDetails: {
+          ...authState?.userDetails,
+          ...user,
+        },
+      });
+      return { success: true, message: "User updated successfully" };
+
+    } catch (error) {
+      console.error("Error updating user:", error);
+      if (error instanceof Error) {
+        return { isError: true, message: error.message };
+      }
+    }
+  }
+
   const updateConnectedUsers = async (connectedUser: User) => {
     try {
       setAuthState(prev => {
@@ -278,7 +312,7 @@ export const AuthProvider = ({ children }: any) => {
 
   return (
     <AuthContext.Provider
-      value={{ register, login, logout, verifyEmail, isReady, authState, updateConnectedUsers, refreshUserState }}
+      value={{ register, login, logout, verifyEmail, isReady, authState, updateConnectedUsers, refreshUserState, updateUser }}
     >
       {children}
     </AuthContext.Provider>
