@@ -1,6 +1,5 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { NotificationProvider } from "@/context/NotificationContext";
-import { SocketProvider } from "@/context/SocketProvider";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import {
   DarkTheme,
@@ -27,15 +26,13 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <NotificationProvider>
-          <SocketProvider>
-            {/* <Stack>
+          {/* <Stack>
             <Stack.Screen name="(protected)" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack> */}
-            <AuthCheckProvider />
-            <StatusBar style="auto" />
-          </SocketProvider>
+          <AuthCheckProvider />
+          <StatusBar style="auto" />
         </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
