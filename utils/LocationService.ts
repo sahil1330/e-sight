@@ -2,7 +2,7 @@ import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
 import * as TaskManager from "expo-task-manager";
-import { io, Socket } from "socket.io-client";
+import axiosInstance from "./axiosInstance";
 import { LAST_LOCATION_TOKEN, LOCATION_TASK_NAME, PENDING_LOCATION_TOKEN } from "./constants";
 import { addLocationNotification } from "./notificationHelpers";
 
@@ -17,42 +17,26 @@ Notifications.setNotificationHandler({
 })
 
 class LocationService {
-    socket: Socket | undefined;
     notificationId: string | null;
     isServiceRunning: boolean;
+    private maxRetries: number;
+    private retryDelay: number;
 
     constructor() {
         this.isServiceRunning = false;
         this.notificationId = null;
-        this.socket = undefined;
+        this.maxRetries = 3;
+        this.retryDelay = 1000; // 1 second initial delay
     }
 
-    async initializeSocket() {
-        // Use external socket if provided now or in constructor
-        if (!this.socket) {
-            // Fallback to creating a new socket if none is provided
-            this.socket = io(process.env.EXPO_PUBLIC_REST_API_BASE_URL!, {
-                transports: ["websocket"],
-                autoConnect: true,
-                reconnectionAttempts: 5,
-                reconnectionDelay: 1000,
-                timeout: 20000,
-            });
-
-            // Only set up listeners if we're creating a new socket
-            this.socket.on("connect", () => {
-                // console.log("Socket connected:", this.socket?.id);
-            });
-
-            this.socket.on("disconnect", (reason) => {
-                // console.log("Socket disconnected:", reason);
-            });
-
-            this.socket.on("connect_error", (error) => {
-                // console.log("Socket connection error:", error);
-            });
-        } else {
-            // console.log("Using existing socket:", this.socket.id);
+    async checkAPIHealth(): Promise<boolean> {
+        try {
+            // Simple health check or use existing API call
+            await axiosInstance.get('/health', { timeout: 5000 });
+            return true;
+        } catch (error) {
+            console.error("API health check failed:", error);
+            return false;
         }
     }
 
@@ -92,7 +76,11 @@ class LocationService {
                 throw new Error("Permissions not granted");
             }
 
-            await this.initializeSocket();
+            // Check if API is reachable
+            const isHealthy = await this.checkAPIHealth();
+            if (!isHealthy) {
+                console.warn("API health check failed, but starting service anyway");
+            }
 
             // Note: Device notifications removed - using secure storage notification system instead
 
@@ -134,19 +122,6 @@ class LocationService {
         try {
             await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
 
-            if (this.socket) {
-                this.socket.removeAllListeners();
-                this.socket.disconnect();
-                this.socket = undefined;
-            }
-
-            // Clean up global socket
-            if (globalSocket) {
-                globalSocket.removeAllListeners();
-                globalSocket.disconnect();
-                globalSocket = null;
-            }
-
             // Cancel all notifications
             await Notifications.cancelAllScheduledNotificationsAsync();
 
@@ -173,75 +148,111 @@ class LocationService {
         return stored === "true" && this.isServiceRunning;
     }
 
-    // Get current location status
+    // Get current API connection status
     async getConnectionStatus() {
-        return this.socket?.connected || false
+        return await this.checkAPIHealth();
     }
 }
 
-// Create a global socket instance to persist between location updates
-let globalSocket: Socket | null = null;
+// Offline queue for failed location updates
+const OFFLINE_QUEUE_KEY = "locationOfflineQueue";
+const MAX_QUEUE_SIZE = 100;
 
-// Helper function to ensure socket connection
-const ensureSocketConnection = async (): Promise<Socket | null> => {
-    if (!globalSocket || !globalSocket.connected) {
-
-        if (globalSocket) {
-            globalSocket.removeAllListeners();
-            globalSocket.disconnect();
-        }
-
-        globalSocket = io(process.env.EXPO_PUBLIC_REST_API_BASE_URL!, {
-            transports: ["websocket"],
-            autoConnect: true,
-            reconnectionAttempts: Infinity, // Keep trying forever
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 10000,
-            timeout: 20000,
-            forceNew: true, // Force new connection
+// Helper function to add location to offline queue
+const addToOfflineQueue = async (locationData: any) => {
+    try {
+        const queueStr = await SecureStore.getItemAsync(OFFLINE_QUEUE_KEY);
+        const queue = queueStr ? JSON.parse(queueStr) : [];
+        
+        // Add new location to queue
+        queue.push({
+            ...locationData,
+            queuedAt: Date.now()
         });
-
-        globalSocket.on("connect", () => {
-            // console.log("Global socket connected:", globalSocket?.id);
-        });
-
-        globalSocket.on("disconnect", (reason) => {
-            // console.log("Global socket disconnected:", reason);
-            // Auto-reconnect on disconnect
-            setTimeout(() => {
-                if (globalSocket && !globalSocket.connected) {
-                    globalSocket.connect();
-                }
-            }, 2000);
-        });
-
-        globalSocket.on("connect_error", (error) => {
-            // console.log("Global socket connection error:", error);
-        });
-
-        globalSocket.on("reconnect", (attemptNumber) => {
-            // console.log("Global socket reconnected after", attemptNumber, "attempts");
-        });
-
-        // Wait for connection with longer timeout
-        return new Promise((resolve) => {
-            const timeout = setTimeout(() => {
-                resolve(globalSocket); // Return socket even if not connected yet
-            }, 10000);
-
-            if (globalSocket?.connected) {
-                clearTimeout(timeout);
-                resolve(globalSocket);
-            } else {
-                globalSocket?.once("connect", () => {
-                    clearTimeout(timeout);
-                    resolve(globalSocket);
-                });
-            }
-        });
+        
+        // Keep only the latest MAX_QUEUE_SIZE items
+        const trimmedQueue = queue.slice(-MAX_QUEUE_SIZE);
+        
+        await SecureStore.setItemAsync(OFFLINE_QUEUE_KEY, JSON.stringify(trimmedQueue));
+        // console.log(`Added location to offline queue. Queue size: ${trimmedQueue.length}`);
+    } catch (error) {
+        console.error("Error adding to offline queue:", error);
     }
+};
 
-    return globalSocket;
+// Helper function to process offline queue
+const processOfflineQueue = async () => {
+    try {
+        const queueStr = await SecureStore.getItemAsync(OFFLINE_QUEUE_KEY);
+        if (!queueStr) return;
+        
+        const queue = JSON.parse(queueStr);
+        if (queue.length === 0) return;
+        
+        // console.log(`Processing ${queue.length} queued location updates`);
+        
+        const successfulUpdates: number[] = [];
+        
+        // Process queue items (max 10 at a time to avoid overwhelming the API)
+        const batchSize = Math.min(10, queue.length);
+        for (let i = 0; i < batchSize; i++) {
+            const item = queue[i];
+            try {
+                await axiosInstance.post('/location/update', item, { timeout: 5000 });
+                successfulUpdates.push(i);
+            } catch (error) {
+                // Skip failed items, will retry next time
+                console.error(`Failed to send queued location ${i}:`, error);
+            }
+        }
+        
+        // Remove successful updates from queue
+        if (successfulUpdates.length > 0) {
+            const remainingQueue = queue.filter((_: any, index: number) => 
+                !successfulUpdates.includes(index)
+            );
+            await SecureStore.setItemAsync(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+            // console.log(`Processed ${successfulUpdates.length} queued locations. ${remainingQueue.length} remaining.`);
+        }
+    } catch (error) {
+        console.error("Error processing offline queue:", error);
+    }
+};
+
+// Helper function to send location update with retry logic
+const sendLocationUpdate = async (
+    locationData: any, 
+    retryCount: number = 0, 
+    maxRetries: number = 3
+): Promise<boolean> => {
+    try {
+        const response = await axiosInstance.post('/location/update', locationData, {
+            timeout: 10000, // 10 second timeout
+        });
+        
+        if (response.status === 200 || response.status === 201) {
+            // Success! Try to process any queued updates
+            processOfflineQueue().catch(err => 
+                console.error("Error processing queue after successful update:", err)
+            );
+            return true;
+        }
+        
+        throw new Error(`Unexpected status code: ${response.status}`);
+    } catch (error: any) {
+        console.error(`Location update attempt ${retryCount + 1}/${maxRetries} failed:`, error.message);
+        
+        // If we haven't exceeded max retries, try again with exponential backoff
+        if (retryCount < maxRetries - 1) {
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10 seconds
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return sendLocationUpdate(locationData, retryCount + 1, maxRetries);
+        }
+        
+        // Max retries exceeded, add to offline queue
+        await addToOfflineQueue(locationData);
+        return false;
+    }
 };
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
@@ -261,9 +272,6 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
 
             // Only proceed if we have location data
             if (locations && locations.length > 0) {
-
-                // Ensure socket connection (non-blocking)
-                const socket = await ensureSocketConnection();
 
                 const userState = await SecureStore.getItemAsync("authState");
                 const parsedUserState = userState ? JSON.parse(userState) : null;
@@ -288,13 +296,17 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                     }
                 };
 
-                // Try to emit the location data
-                if (socket) {
-                    socket.emit("locationUpdate", locationData);
+                // Send location update via REST API with retry logic
+                const success = await sendLocationUpdate(locationData);
 
-                    // Store the last location for recovery
+                if (success) {
+                    // Store the last successful location
                     await SecureStore.setItemAsync(LAST_LOCATION_TOKEN, JSON.stringify(locationData));
+                    
+                    // Clear any pending location since we succeeded
+                    await SecureStore.deleteItemAsync(PENDING_LOCATION_TOKEN);
                 } else {
+                    // Store as pending for manual retry if needed
                     await SecureStore.setItemAsync(PENDING_LOCATION_TOKEN, JSON.stringify(locationData));
                 }
 
@@ -304,11 +316,11 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }: any) => {
                         location.coords.latitude,
                         location.coords.longitude
                     );
-                } catch (notifError) {
-                    // console.log("Location notification storage error:", notifError);
+                } catch {
+                    // console.log("Location notification storage error");
                 }
 
-                return { success: true };
+                return { success: true, locationUpdateSuccess: success };
             }
         }
 

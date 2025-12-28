@@ -6,7 +6,6 @@ interface SocketProviderProps {
 }
 
 interface ISocketContext {
-  sendLocationUpdates: (userId: string, location: any) => any;
   joinRoom: (roomId: string) => void;
   leaveRoom: (roomId: string) => void;
   socket: Socket | undefined;
@@ -51,17 +50,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     [socket]
   );
 
-  const sendLocationUpdates = useCallback(
-    (userId: string, location: any) => {
-      if (socket) {
-        socket.emit("locationUpdate", { userId, location });
-      } else {
-        console.error("Socket is not initialized");
-      }
-    },
-    [socket]
-  );
-
   useEffect(() => {
     const _socket = io(process.env.EXPO_PUBLIC_REST_API_BASE_URL!, {
       transports: ["websocket"],
@@ -85,7 +73,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   }, []);
   return (
     <SocketContext.Provider
-      value={{ socket, sendLocationUpdates, joinRoom, leaveRoom }}
+      value={{ socket, joinRoom, leaveRoom }}
     >
       {children}
     </SocketContext.Provider>
