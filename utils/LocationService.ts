@@ -90,9 +90,9 @@ class LocationService {
             // Start background location task with settings optimized for 24/7 operation
             await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
                 accuracy: Location.Accuracy.Highest, // Use balanced instead of best for battery
-                timeInterval: 30000, // 30 seconds - less frequent to preserve battery
-                distanceInterval: 50, // 50 meters
-                deferredUpdatesInterval: 30000,
+                timeInterval: 60000, // 60 seconds - less frequent to preserve battery
+                distanceInterval: 100, // 50 meters
+                // deferredUpdatesInterval: 30000,
                 foregroundService: {
                     notificationTitle: "E-Kaathi Location Tracking",
                     notificationBody: "Continuously tracking location for safety",

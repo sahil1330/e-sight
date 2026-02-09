@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
+    "@google/genai": "^1.40.0",
     "@hookform/resolvers": "^5.0.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
@@ -36,6 +37,7 @@
     "expo-notifications": "~0.31.3",
     "expo-router": "~5.0.6",
     "expo-secure-store": "~14.2.3",
+    "expo-speech": "~13.1.7",
     "expo-splash-screen": "~0.30.9",
     "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
