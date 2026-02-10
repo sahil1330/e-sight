@@ -201,3 +201,65 @@ export async function readTextFromImage(
     );
   }
 }
+
+/**
+ * Analyzes an image with a custom user question (Live Vision Assistant)
+ * @param base64Image - Base64 encoded image string
+ * @param userQuestion - Question or prompt from the user about the image
+ * @param mimeType - MIME type of the image (default: 'image/jpeg')
+ * @returns Promise<string> - AI response to the user's question
+ */
+export async function analyzeImageWithQuestion(
+  base64Image: string,
+  userQuestion: string,
+  mimeType: string = "image/jpeg"
+): Promise<string> {
+  try {
+    const systemPrompt = `You are a helpful AI vision assistant for a visually impaired person. 
+They are showing you what their camera sees and asking a question about it. 
+
+IMPORTANT: You must answer in EXACTLY 1-3 sentences maximum. Be concise, direct, and helpful.
+Focus on answering their specific question with the most relevant information from the image.
+
+User's question: ${userQuestion}`;
+
+    const contents = [
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Image,
+        },
+      },
+      { text: systemPrompt },
+    ];
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: contents,
+      generationConfig: {
+        maxOutputTokens: 80,
+        temperature: 0.3,
+        candidateCount: 1,
+      },
+    });
+
+    if (!response.text) {
+      throw new Error("No response generated from the AI");
+    }
+
+    return response.text;
+  } catch (error) {
+    console.error("Error analyzing image with question:", error);
+    
+    // Provide more helpful error messages
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('network')) {
+        throw new Error("Network timeout. Please check your internet connection.");
+      }
+      throw new Error(`Failed to analyze: ${error.message}`);
+    }
+    
+    throw new Error("Failed to analyze the image. Please try again.");
+  }
+}
+

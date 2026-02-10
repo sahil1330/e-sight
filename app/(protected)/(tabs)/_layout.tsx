@@ -27,7 +27,7 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarLabelStyle: {
           fontSize: 12,
-          fontWeight: '600',
+          fontWeight: "600",
         },
         tabBarStyle: Platform.select({
           ios: {
@@ -55,58 +55,76 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 32 : 28} 
-              name="house.fill" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 32 : 28}
+              name="house.fill"
+              color={color}
             />
           ),
           tabBarAccessibilityLabel: "Home tab",
         }}
       />
-      {
-        authState.userDetails?.role === "caretaker" ? (
-          <Tabs.Screen
-            name="location"
-            options={{
-              title: "Location",
-              tabBarIcon: ({ color, focused }) => (
-                <Ionicons 
-                  name="location-sharp" 
-                  size={focused ? 28 : 24} 
-                  color={color} 
-                />
-              ),
-              tabBarAccessibilityLabel: "Location tracking tab",
-            }}
-          />
-        ) : (
-          <Tabs.Screen
-            name="location"
-            options={{
-              href: null, // Disable direct navigation to this tab
-              title: "Location",
-              tabBarIcon: ({ color, focused }) => (
-                <Ionicons 
-                  name="location-sharp" 
-                  size={focused ? 28 : 24} 
-                  color={color} 
-                />
-              ),
-              tabBarAccessibilityLabel: "Location tab (disabled for blind users)",
-            }}
-          />
-        )
-      }
+      {authState.userDetails?.role === "blind" && (
+        <Tabs.Screen
+          name="vision"
+          options={{
+            title: "Vision",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name="eye" size={focused ? 28 : 24} color={color} />
+            ),
+            tabBarAccessibilityLabel: "AI Vision Assistant tab",
+          }}
+        />
+      )}
+      {authState.userDetails?.role === "caretaker" && (
+        <Tabs.Screen
+          name="vision"
+          options={{
+            href: null, // Disable for caretakers
+          }}
+        />
+      )}
+      {authState.userDetails?.role === "caretaker" ? (
+        <Tabs.Screen
+          name="location"
+          options={{
+            title: "Location",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name="location-sharp"
+                size={focused ? 28 : 24}
+                color={color}
+              />
+            ),
+            tabBarAccessibilityLabel: "Location tracking tab",
+          }}
+        />
+      ) : (
+        <Tabs.Screen
+          name="location"
+          options={{
+            href: null, // Disable direct navigation to this tab
+            title: "Location",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name="location-sharp"
+                size={focused ? 28 : 24}
+                color={color}
+              />
+            ),
+            tabBarAccessibilityLabel: "Location tab (disabled for blind users)",
+          }}
+        />
+      )}
       <Tabs.Screen
         name="notifications"
         options={{
           title: "Alerts",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name="notifications" 
-              size={focused ? 28 : 24} 
-              color={color} 
+            <Ionicons
+              name="notifications"
+              size={focused ? 28 : 24}
+              color={color}
             />
           ),
           tabBarAccessibilityLabel: "Notifications and alerts tab",
@@ -118,10 +136,10 @@ export default function TabLayout() {
           headerShown: false,
           title: "Profile",
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons 
-              name="person-circle-sharp" 
-              size={focused ? 32 : 28} 
-              color={color} 
+            <Ionicons
+              name="person-circle-sharp"
+              size={focused ? 32 : 28}
+              color={color}
             />
           ),
           tabBarAccessibilityLabel: "Profile settings tab",

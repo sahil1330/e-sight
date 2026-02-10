@@ -97,6 +97,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 recordAudioAndroid: true
             }
         ],
+        [
+            'expo-speech-recognition',
+            {
+                microphonePermission: 'Allow $(PRODUCT_NAME) to access your microphone for voice commands',
+                speechRecognitionPermission: 'Allow $(PRODUCT_NAME) to use speech recognition',
+                androidSpeechServicePackages: ['com.google.android.googlequicksearchbox']
+            }
+        ],
         'expo-secure-store',
         [
             "react-native-ble-plx",
