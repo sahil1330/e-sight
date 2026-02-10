@@ -12,8 +12,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -35,6 +33,8 @@ const LiveVisionAssistant = () => {
   const recognitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const lastTranscriptionRef = useRef<string>("");
 
   const { width: screenWidth } = Dimensions.get("window");
 
@@ -50,12 +50,13 @@ const LiveVisionAssistant = () => {
 
   // Speech recognition event handler
   useSpeechRecognitionEvent("start", () => {
-    console.log("Speech recognition started");
+    // console.log("Speech recognition started");
   });
 
   useSpeechRecognitionEvent("result", (event) => {
     const transcription = event.results[0]?.transcript || "";
     setRecognizedText(transcription);
+    lastTranscriptionRef.current = transcription;
 
     // Clear existing timeout
     if (recognitionTimeoutRef.current) {
@@ -65,6 +66,7 @@ const LiveVisionAssistant = () => {
     // Set new timeout - if user pauses for 2 seconds, process the question
     recognitionTimeoutRef.current = setTimeout(() => {
       if (transcription.trim()) {
+        // console.log("Submitting question after 2s pause:", transcription);
         handleQuestionSubmit(transcription);
       }
     }, 2000);
@@ -73,9 +75,11 @@ const LiveVisionAssistant = () => {
   useSpeechRecognitionEvent("error", (event) => {
     console.error("Speech recognition error:", event);
     setIsListening(false);
+    lastTranscriptionRef.current = "";
 
     if (event.error === "no-match") {
       // User didn't say anything - this is normal
+      // console.log("No speech detected");
       return;
     }
 
@@ -95,8 +99,27 @@ const LiveVisionAssistant = () => {
   });
 
   useSpeechRecognitionEvent("end", () => {
-    console.log("Speech recognition ended");
+    // console.log(
+    //   "Speech recognition ended, last text:",
+    //   lastTranscriptionRef.current,
+    // );
     setIsListening(false);
+
+    // If we have valid text and a pending timeout, submit immediately
+    if (lastTranscriptionRef.current.trim() && recognitionTimeoutRef.current) {
+      clearTimeout(recognitionTimeoutRef.current);
+      recognitionTimeoutRef.current = null;
+      handleQuestionSubmit(lastTranscriptionRef.current);
+      lastTranscriptionRef.current = "";
+    } else {
+      // Clear timeout and reset if no valid text
+      if (recognitionTimeoutRef.current) {
+        clearTimeout(recognitionTimeoutRef.current);
+        recognitionTimeoutRef.current = null;
+      }
+      lastTranscriptionRef.current = "";
+      // console.log("Speech ended with no valid text");
+    }
   });
 
   useEffect(() => {
@@ -131,9 +154,11 @@ const LiveVisionAssistant = () => {
       if (recognitionTimeoutRef.current) {
         clearTimeout(recognitionTimeoutRef.current);
       }
+      lastTranscriptionRef.current = "";
     } else {
       // Start listening
       setRecognizedText("");
+      lastTranscriptionRef.current = "";
       setIsListening(true);
 
       try {
@@ -174,7 +199,14 @@ const LiveVisionAssistant = () => {
   };
 
   const handleQuestionSubmit = async (question: string) => {
-    if (!question.trim() || !cameraRef.current) return;
+
+    if (!question.trim() || !cameraRef.current) {
+      lastTranscriptionRef.current = "";
+      return;
+    }
+
+    // Clear the transcription ref
+    lastTranscriptionRef.current = "";
 
     // Stop listening
     if (isListening) {
@@ -188,16 +220,19 @@ const LiveVisionAssistant = () => {
       setIsSpeaking(false);
     }
 
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     try {
       setIsAnalyzing(true);
       const startTime = Date.now();
 
       // Capture current camera frame
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.5,
+        quality: 0.3,
         skipProcessing: true,
       });
-      console.log(`Photo captured in ${Date.now() - startTime}ms`);
+      // console.log(`Photo captured in ${Date.now() - startTime}ms`);
 
       if (!photo) {
         Alert.alert("Error", "Failed to capture camera frame.");
@@ -216,7 +251,7 @@ const LiveVisionAssistant = () => {
           base64: true,
         },
       );
-      console.log(`Image resized in ${Date.now() - resizeStartTime}ms`);
+      // console.log(`Image resized in ${Date.now() - resizeStartTime}ms`);
 
       if (!manipulatedImage.base64) {
         Alert.alert("Error", "Failed to process image.");
@@ -237,7 +272,7 @@ const LiveVisionAssistant = () => {
         question,
         "image/jpeg",
       );
-      console.log(`AI response received in ${Date.now() - aiStartTime}ms`);
+      // console.log(`AI response received in ${Date.now() - aiStartTime}ms`);
 
       setAiResponse(response);
 
@@ -249,18 +284,37 @@ const LiveVisionAssistant = () => {
 
       setIsAnalyzing(false);
       setRecognizedText("");
-      console.log(`Total analysis completed in ${Date.now() - startTime}ms`);
+      abortControllerRef.current = null;
+      // console.log(`Total analysis completed in ${Date.now() - startTime}ms`);
 
       // Speak the response
       speakResponse(response);
     } catch (error) {
       console.error("Error analyzing image:", error);
       setIsAnalyzing(false);
+      abortControllerRef.current = null;
+
+      // Check if it was aborted
+      if (error instanceof Error && error.name === "AbortError") {
+        // console.log("Analysis was cancelled by user");
+        return;
+      }
+
       Alert.alert(
         "Analysis Failed",
         error instanceof Error ? error.message : "Failed to analyze the image.",
       );
     }
+  };
+
+  const handleStopAnalysis = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsAnalyzing(false);
+    setRecognizedText("");
+    // console.log("Analysis stopped by user");
   };
 
   const speakResponse = (text: string) => {
@@ -293,10 +347,11 @@ const LiveVisionAssistant = () => {
 
   if (!cameraPermission) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5cf6" />
+      <View className="flex-1 justify-center items-center bg-gray-50">
+        <ActivityIndicator size="large" color="#3b82f6" />
         <Text
-          style={[styles.loadingText, { fontSize: responsiveSize.bodyText }]}
+          className="mt-4 text-slate-600"
+          style={{ fontSize: responsiveSize.bodyText }}
         >
           Loading camera...
         </Text>
@@ -306,37 +361,32 @@ const LiveVisionAssistant = () => {
 
   if (!cameraPermission.granted) {
     return (
-      <View style={styles.permissionContainer}>
+      <View className="flex-1 justify-center items-center bg-gray-50 p-8">
         <Ionicons
           name="camera-outline"
           size={responsiveSize.iconSize * 3}
           color="#9ca3af"
         />
         <Text
-          style={[
-            styles.permissionTitle,
-            { fontSize: responsiveSize.headerText },
-          ]}
+          className="font-semibold text-slate-800 mt-4 mb-2 text-center"
+          style={{ fontSize: responsiveSize.headerText }}
         >
           Camera Permission Required
         </Text>
         <Text
-          style={[styles.permissionText, { fontSize: responsiveSize.bodyText }]}
+          className="text-slate-600 text-center mb-6 leading-6"
+          style={{ fontSize: responsiveSize.bodyText }}
         >
           This feature requires camera access to help you see your surroundings.
         </Text>
         <TouchableOpacity
-          style={[
-            styles.permissionButton,
-            { paddingVertical: responsiveSize.baseUnit * 0.8 },
-          ]}
+          className="bg-blue-500 px-8 rounded-xl"
+          style={{ paddingVertical: responsiveSize.baseUnit * 0.8 }}
           onPress={requestCameraPermission}
         >
           <Text
-            style={[
-              styles.permissionButtonText,
-              { fontSize: responsiveSize.buttonText },
-            ]}
+            className="text-white font-semibold"
+            style={{ fontSize: responsiveSize.buttonText }}
           >
             Grant Camera Permission
           </Text>
@@ -346,226 +396,183 @@ const LiveVisionAssistant = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Camera View */}
-      <View style={styles.cameraContainer}>
-        <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
-          {/* Top Controls */}
-          <View
-            style={[
-              styles.topControls,
-              { paddingHorizontal: responsiveSize.containerPadding },
-            ]}
+    <View className="flex-1 bg-black">
+      {/* Full Screen Camera View */}
+      <View className="flex-1 relative">
+        <CameraView
+          ref={cameraRef}
+          style={{ flex: 1 }}
+          facing={facing}
+          mode="picture"
+        />
+
+        {/* Top Controls - Overlaid on Camera */}
+        <View
+          className="absolute top-10 left-0 right-0 flex-row justify-end"
+          style={{ paddingHorizontal: responsiveSize.containerPadding }}
+        >
+          <TouchableOpacity
+            onPress={toggleCameraFacing}
+            className="bg-black/60 rounded-xl"
+            style={{ padding: responsiveSize.baseUnit * 0.6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Flip camera"
           >
+            <Ionicons
+              name="camera-reverse"
+              size={responsiveSize.iconSize}
+              color="white"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Listening Indicator - Overlaid on Camera */}
+        {isListening && (
+          <View
+            className="absolute bg-blue-500/95 py-4 px-6 rounded-2xl items-center"
+            style={{
+              top: "40%",
+              left: "50%",
+              transform: [{ translateX: -100 }, { translateY: -50 }],
+              minWidth: 200,
+            }}
+          >
+            <View className="w-3 h-3 rounded-full bg-emerald-500 mb-2" />
+            <Text
+              className="text-white font-semibold mb-1"
+              style={{ fontSize: responsiveSize.bodyText }}
+            >
+              Listening...
+            </Text>
+            {recognizedText && (
+              <Text
+                className="text-white italic text-center"
+                style={{ fontSize: responsiveSize.bodyText }}
+              >
+                &quot;{recognizedText}&quot;
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Analyzing Overlay - Overlaid on Camera */}
+        {isAnalyzing && (
+          <View className="absolute inset-0 bg-black/70 justify-center items-center">
+            <ActivityIndicator size="large" color="#ffffff" />
+            <Text
+              className="text-white font-semibold mt-4"
+              style={{ fontSize: responsiveSize.headerText }}
+            >
+              Analyzing...
+            </Text>
+
+            {/* Stop Analysis Button */}
             <TouchableOpacity
-              onPress={toggleCameraFacing}
-              style={[
-                styles.topButton,
-                { padding: responsiveSize.baseUnit * 0.6 },
-              ]}
+              onPress={handleStopAnalysis}
+              className="absolute right-6 bg-red-500 rounded-full"
+              style={{
+                bottom: responsiveSize.baseUnit * 6,
+                padding: responsiveSize.baseUnit * 0.8,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
               accessibilityRole="button"
-              accessibilityLabel="Flip camera"
+              accessibilityLabel="Stop analysis"
             >
               <Ionicons
-                name="camera-reverse"
+                name="stop"
                 size={responsiveSize.iconSize}
                 color="white"
               />
             </TouchableOpacity>
           </View>
+        )}
 
-          {/* Listening Indicator */}
-          {isListening && (
-            <View style={styles.listeningIndicator}>
-              <View style={styles.listeningPulse} />
-              <Text
-                style={[
-                  styles.listeningText,
-                  { fontSize: responsiveSize.bodyText },
-                ]}
-              >
-                Listening...
-              </Text>
-              {recognizedText && (
+        {/* Glassmorphic AI Response Bubble - Shows when speaking */}
+        {isSpeaking && aiResponse && (
+          <View
+            className="absolute left-4 right-4 items-center"
+            style={{
+              bottom: responsiveSize.baseUnit * 10,
+            }}
+          >
+            <View
+              className="bg-black/70 backdrop-blur-xl p-4 rounded-3xl max-w-[90%]"
+              style={{
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 12,
+                elevation: 8,
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.1)",
+              }}
+            >
+              <View className="flex-row items-center mb-2">
+                <Ionicons
+                  name="sparkles"
+                  size={responsiveSize.smallIconSize}
+                  color="#3b82f6"
+                />
                 <Text
-                  style={[
-                    styles.recognizedText,
-                    { fontSize: responsiveSize.bodyText },
-                  ]}
+                  className="text-blue-400 font-semibold ml-2"
+                  style={{ fontSize: responsiveSize.bodyText * 0.9 }}
                 >
-                  &quot;{recognizedText}&quot;
+                  AI Assistant
                 </Text>
-              )}
-            </View>
-          )}
-
-          {/* Analyzing Overlay */}
-          {isAnalyzing && (
-            <View style={styles.analyzingOverlay}>
-              <ActivityIndicator size="large" color="#ffffff" />
+                <View className="flex-1" />
+                <TouchableOpacity
+                  onPress={toggleSpeechPlayback}
+                  className="ml-2"
+                  accessibilityRole="button"
+                  accessibilityLabel="Stop speaking"
+                >
+                  <Ionicons
+                    name="stop-circle"
+                    size={responsiveSize.smallIconSize}
+                    color="#3b82f6"
+                  />
+                </TouchableOpacity>
+              </View>
               <Text
-                style={[
-                  styles.analyzingText,
-                  { fontSize: responsiveSize.headerText },
-                ]}
+                className="text-white leading-6"
+                style={{ fontSize: responsiveSize.bodyText }}
               >
-                Analyzing...
-              </Text>
-            </View>
-          )}
-        </CameraView>
-      </View>
-
-      {/* Response Display */}
-      <View
-        style={[
-          styles.responseContainer,
-          { padding: responsiveSize.containerPadding },
-        ]}
-      >
-        {conversationHistory.length === 0 ? (
-          <View style={styles.instructionsContainer}>
-            <Ionicons
-              name="mic"
-              size={responsiveSize.iconSize * 2}
-              color="#8b5cf6"
-            />
-            <Text
-              style={[
-                styles.instructionsTitle,
-                { fontSize: responsiveSize.headerText },
-              ]}
-            >
-              AI Vision Assistant
-            </Text>
-            <Text
-              style={[
-                styles.instructionsText,
-                { fontSize: responsiveSize.bodyText },
-              ]}
-            >
-              Tap the microphone button and ask me anything about what&apos;s in
-              front of your camera!
-            </Text>
-            <View style={styles.examplesContainer}>
-              <Text
-                style={[
-                  styles.exampleText,
-                  { fontSize: responsiveSize.bodyText * 0.9 },
-                ]}
-              >
-                • &quot;What do you see?&quot;
-              </Text>
-              <Text
-                style={[
-                  styles.exampleText,
-                  { fontSize: responsiveSize.bodyText * 0.9 },
-                ]}
-              >
-                • &quot;Read the text on this&quot;
-              </Text>
-              <Text
-                style={[
-                  styles.exampleText,
-                  { fontSize: responsiveSize.bodyText * 0.9 },
-                ]}
-              >
-                • &quot;What color is this?&quot;
-              </Text>
-              <Text
-                style={[
-                  styles.exampleText,
-                  { fontSize: responsiveSize.bodyText * 0.9 },
-                ]}
-              >
-                • &quot;Is there anyone nearby?&quot;
+                {aiResponse}
               </Text>
             </View>
           </View>
-        ) : (
-          <ScrollView
-            style={styles.conversationScroll}
-            showsVerticalScrollIndicator={true}
-            contentContainerStyle={{ paddingBottom: responsiveSize.baseUnit }}
-          >
-            {conversationHistory.map((item, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.messageContainer,
-                  item.type === "user" ? styles.userMessage : styles.aiMessage,
-                ]}
-              >
-                <View style={styles.messageHeader}>
-                  <Ionicons
-                    name={item.type === "user" ? "person-circle" : "sparkles"}
-                    size={responsiveSize.smallIconSize}
-                    color={item.type === "user" ? "#8b5cf6" : "#10b981"}
-                  />
-                  <Text
-                    style={[
-                      styles.messageLabel,
-                      { fontSize: responsiveSize.bodyText * 0.9 },
-                    ]}
-                  >
-                    {item.type === "user" ? "You" : "AI"}
-                  </Text>
-                </View>
-                <Text
-                  style={[
-                    styles.messageText,
-                    { fontSize: responsiveSize.bodyText },
-                  ]}
-                >
-                  {item.text}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Audio Control */}
-        {aiResponse && (
-          <TouchableOpacity
-            onPress={toggleSpeechPlayback}
-            style={[
-              styles.audioButton,
-              { padding: responsiveSize.baseUnit * 0.5 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={
-              isSpeaking ? "Stop speaking" : "Replay response"
-            }
-          >
-            <Ionicons
-              name={isSpeaking ? "stop-circle" : "volume-high"}
-              size={responsiveSize.smallIconSize}
-              color="white"
-            />
-          </TouchableOpacity>
         )}
       </View>
 
       {/* Microphone Button */}
       <View
-        style={[
-          styles.micContainer,
-          { paddingBottom: responsiveSize.baseUnit * 1.5 },
-        ]}
+        className="absolute bottom-0 left-0 right-0 items-center"
+        style={{ paddingBottom: responsiveSize.baseUnit * 5 }}
       >
         <TouchableOpacity
           onPress={handleMicToggle}
           disabled={isAnalyzing}
-          style={[
-            styles.micButton,
-            {
-              width: responsiveSize.baseUnit * 4.5,
-              height: responsiveSize.baseUnit * 4.5,
-              borderRadius: responsiveSize.baseUnit * 2.25,
-            },
-            isListening && styles.micButtonActive,
-            isAnalyzing && styles.micButtonDisabled,
-          ]}
+          className={`justify-center items-center shadow-lg ${
+            isListening
+              ? "bg-emerald-500"
+              : isAnalyzing
+                ? "bg-gray-400"
+                : "bg-blue-500"
+          }`}
+          style={{
+            width: responsiveSize.baseUnit * 4.5,
+            height: responsiveSize.baseUnit * 4.5,
+            borderRadius: responsiveSize.baseUnit * 2.25,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
           accessibilityRole="button"
           accessibilityLabel={
             isListening ? "Stop listening" : "Start listening"
@@ -577,222 +584,20 @@ const LiveVisionAssistant = () => {
             color="white"
           />
         </TouchableOpacity>
-        <Text style={[styles.micLabel, { fontSize: responsiveSize.bodyText }]}>
+        <Text
+          className="text-white font-semibold mt-2"
+          style={{
+            fontSize: responsiveSize.bodyText,
+            textShadowColor: "rgba(0, 0, 0, 0.5)",
+            textShadowOffset: { width: 0, height: 1 },
+            textShadowRadius: 2,
+          }}
+        >
           {isListening ? "Listening..." : "Tap to ask"}
         </Text>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000000",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-  },
-  loadingText: {
-    marginTop: 16,
-    color: "#64748b",
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-    padding: 32,
-  },
-  permissionTitle: {
-    fontWeight: "600",
-    color: "#1e293b",
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  permissionText: {
-    color: "#64748b",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  permissionButton: {
-    backgroundColor: "#8b5cf6",
-    paddingHorizontal: 32,
-    borderRadius: 12,
-  },
-  permissionButtonText: {
-    color: "white",
-    fontWeight: "600",
-  },
-  cameraContainer: {
-    flex: 0.6,
-  },
-  camera: {
-    flex: 1,
-  },
-  topControls: {
-    position: "absolute",
-    top: 40,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "flex-end",
-  },
-  topButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    borderRadius: 12,
-  },
-  listeningIndicator: {
-    position: "absolute",
-    top: "40%",
-    left: "50%",
-    transform: [{ translateX: -100 }, { translateY: -50 }],
-    backgroundColor: "rgba(139, 92, 246, 0.95)",
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 16,
-    alignItems: "center",
-    minWidth: 200,
-  },
-  listeningPulse: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#10b981",
-    marginBottom: 8,
-  },
-  listeningText: {
-    color: "white",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  recognizedText: {
-    color: "white",
-    fontStyle: "italic",
-    textAlign: "center",
-  },
-  analyzingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  analyzingText: {
-    color: "white",
-    fontWeight: "600",
-    marginTop: 16,
-  },
-  responseContainer: {
-    flex: 0.4,
-    backgroundColor: "#ffffff",
-  },
-  instructionsContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  instructionsTitle: {
-    fontWeight: "600",
-    color: "#1e293b",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  instructionsText: {
-    color: "#64748b",
-    textAlign: "center",
-    marginBottom: 24,
-    lineHeight: 22,
-  },
-  examplesContainer: {
-    alignSelf: "stretch",
-    backgroundColor: "#f9fafb",
-    padding: 16,
-    borderRadius: 12,
-  },
-  exampleText: {
-    color: "#64748b",
-    marginVertical: 4,
-  },
-  conversationScroll: {
-    flex: 1,
-  },
-  messageContainer: {
-    marginBottom: 12,
-    padding: 12,
-    borderRadius: 12,
-  },
-  userMessage: {
-    backgroundColor: "#ede9fe",
-    alignSelf: "flex-end",
-    maxWidth: "80%",
-  },
-  aiMessage: {
-    backgroundColor: "#f0fdf4",
-    alignSelf: "flex-start",
-    maxWidth: "80%",
-  },
-  messageHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 6,
-  },
-  messageLabel: {
-    fontWeight: "600",
-    marginLeft: 6,
-    color: "#1e293b",
-  },
-  messageText: {
-    color: "#1e293b",
-    lineHeight: 20,
-  },
-  audioButton: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#0ea5e9",
-    borderRadius: 20,
-  },
-  micContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: "center",
-  },
-  micButton: {
-    backgroundColor: "#8b5cf6",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  micButtonActive: {
-    backgroundColor: "#10b981",
-  },
-  micButtonDisabled: {
-    backgroundColor: "#9ca3af",
-  },
-  micLabel: {
-    color: "#ffffff",
-    fontWeight: "600",
-    marginTop: 8,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-});
 
 export default LiveVisionAssistant;

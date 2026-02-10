@@ -1,17 +1,10 @@
 import LiveVisionAssistant from "@/components/Vision/LiveVisionAssistant";
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 
 export default function VisionScreen() {
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-black">
       <LiveVisionAssistant />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#000000",
-  },
-});

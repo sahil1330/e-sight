@@ -258,10 +258,10 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
       showsVerticalScrollIndicator={false}
       accessibilityLabel="E-Kaathi home screen content - responsive design"
     >
-      {/* Location Tracking Status - 15% of viewport */}
+      {/* Location Tracking Status - 20% of viewport */}
       <View
         style={{
-          height: "15%",
+          height: "20%",
           paddingHorizontal: responsiveSize.containerPadding,
           paddingTop: responsiveSize.baseUnit,
         }}
@@ -358,50 +358,10 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         </View>
       </View>
 
-      {/* AI Image Description - 15% of viewport */}
+      {/* Device Connection - 35% of viewport */}
       <View
         style={{
-          height: "15%",
-          paddingHorizontal: responsiveSize.containerPadding,
-          paddingVertical: responsiveSize.baseUnit * 0.4,
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "white",
-            borderRadius: responsiveSize.baseUnit,
-            padding: responsiveSize.containerPadding,
-            height: "100%",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-            borderWidth: 1,
-            borderColor: "#e5e7eb",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: responsiveSize.headerText,
-              fontWeight: "600",
-              color: "#1e293b",
-              marginBottom: responsiveSize.baseUnit * 0.6,
-            }}
-            accessibilityRole="header"
-          >
-            AI Vision Assistant
-          </Text>
-          <View style={{ flex: 1 }}>
-            <ImageDescription />
-          </View>
-        </View>
-      </View>
-
-      {/* Device Connection - 25% of viewport */}
-      <View
-        style={{
-          height: "25%",
+          height: "35%",
           paddingHorizontal: responsiveSize.containerPadding,
           paddingVertical: responsiveSize.baseUnit * 0.4,
         }}
@@ -438,10 +398,10 @@ const BlindHomeComponent = ({ userDetails }: { userDetails: User }) => {
         </View>
       </View>
 
-      {/* Connected Caretakers - 25% of viewport with internal scrolling */}
+      {/* Connected Caretakers - 30% of viewport with internal scrolling */}
       <View
         style={{
-          height: "25%",
+          height: "30%",
           paddingHorizontal: responsiveSize.containerPadding,
           paddingVertical: responsiveSize.baseUnit * 0.4,
         }}
