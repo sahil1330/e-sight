@@ -1,8 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
+import Constants from 'expo-constants';
 
-// Initialize the Gemini API with your API key
-// Replace with your actual API key or use environment variable
-const API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
+// Get API key from environment or expo-constants (for EAS builds)
+const API_KEY = 
+  process.env.EXPO_PUBLIC_GEMINI_API_KEY || 
+  Constants.expoConfig?.extra?.geminiApiKey ||
+  "YOUR_API_KEY_HERE";
+
+console.log('[Gemini API] API Key configured:', API_KEY ? '✓' : '✗');
 
 const ai = new GoogleGenAI({
   apiKey: API_KEY,

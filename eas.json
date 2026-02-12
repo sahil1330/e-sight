@@ -12,9 +12,17 @@
       }
     },
     "preview": {
+      "android": {
+        "buildType": "apk"
+      },
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "preview"
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_GEMINI_API_KEY": "AIzaSyCDJEGVNK1LpiwWodYJrL0_a0Rzaj5i6ps",
+        "EAS_PROJECT_ID": "184fa7f8-1896-4164-8a5b-037db4f7e1fa",
+        "GOOGLE_MAPS_API_KEY": "AIzaSyDOyeHSEiZf_WnHPyhHhRZrbE7BIHlh7Ak",
+        "EXPO_PUBLIC_REST_API_HOSTNAME": "e-kaathi-backend-lb-789328550.ap-south-1.elb.amazonaws.com",
+        "EXPO_PUBLIC_REST_API_BASE_URL": "http://e-kaathi-backend-lb-789328550.ap-south-1.elb.amazonaws.com"
       }
     },
     "production": {

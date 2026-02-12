@@ -154,6 +154,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         router: {},
         eas: {
             projectId: process.env.EAS_PROJECT_ID || "184fa7f8-1896-4164-8a5b-037db4f7e1fa"
-        }
+        },
+        // Expose environment variables to the app at runtime
+        apiBaseUrl: process.env.EXPO_PUBLIC_REST_API_BASE_URL,
+        apiHostname: process.env.EXPO_PUBLIC_REST_API_HOSTNAME,
+        geminiApiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY,
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
     }
 });
