@@ -3,14 +3,10 @@ import * as SecureStore from "expo-secure-store";
 
 // Create the instance without auth headers initially
 const axiosInstance = axios.create({
-    baseURL: process.env.EXPO_PUBLIC_REST_API_BASE_URL+"/api/v1" || "", // Replace with your API base URL
+    baseURL: `${process.env.EXPO_PUBLIC_REST_API_BASE_URL || ""}/api/v1`,
     timeout: 10000, // Request timeout in milliseconds
     headers: {
         "Content-Type": "application/json",
-    },
-    proxy: {
-        host: process.env.EXPO_PUBLIC_REST_API_HOSTNAME || "",
-        port: 443,
     },
 });
 
