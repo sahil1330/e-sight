@@ -54,6 +54,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     android: {
         ...config.android,
         package: getUniqueIdentifier(),
+        usesCleartextTraffic: true, // Allow HTTP traffic (needed for backend API)
         config: {
             googleMaps: {
                 apiKey: process.env.GOOGLE_MAPS_API_KEY || ''
