@@ -45,3 +45,5 @@ android/*
 android/settings.gradle
 ios/*
 android
+
+*.apk
